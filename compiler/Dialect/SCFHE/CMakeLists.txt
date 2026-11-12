@@ -1,0 +1,22 @@
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/IR" "${CMAKE_CURRENT_BINARY_DIR}/IR")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/IR")
+set(LLVM_TARGET_DEFINITIONS "${CMAKE_CURRENT_SOURCE_DIR}/IR/SCFHEOps.td")
+mlir_tablegen(IR/SCFHEOps.h.inc -gen-op-decls)
+mlir_tablegen(IR/SCFHEOps.cpp.inc -gen-op-defs)
+set(LLVM_TARGET_DEFINITIONS "${CMAKE_CURRENT_SOURCE_DIR}/IR/SCFHETypes.td")
+mlir_tablegen(IR/SCFHETypes.h.inc -gen-typedef-decls -typedefs-dialect=scfhe)
+mlir_tablegen(IR/SCFHETypes.cpp.inc -gen-typedef-defs -typedefs-dialect=scfhe)
+set(LLVM_TARGET_DEFINITIONS "${CMAKE_CURRENT_SOURCE_DIR}/IR/SCFHEDialect.td")
+mlir_tablegen(IR/SCFHEDialect.h.inc -gen-dialect-decls -dialect=scfhe)
+mlir_tablegen(IR/SCFHEDialect.cpp.inc -gen-dialect-defs -dialect=scfhe)
+add_public_tablegen_target(CrossFHESCFHEIncGen)
+
+add_library(CrossFHESCFHE SCFHEDialect.cpp)
+add_dependencies(CrossFHESCFHE CrossFHESCFHEIncGen)
+target_include_directories(CrossFHESCFHE PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/IR" "${CMAKE_CURRENT_BINARY_DIR}/IR")
+target_link_libraries(CrossFHESCFHE PUBLIC MLIRIR MLIRArithDialect
+  MLIRSideEffectInterfaces MLIRInferTypeOpInterface)
+if(NOT MSVC)
+  target_compile_options(CrossFHESCFHE PRIVATE -fno-rtti)
+endif()

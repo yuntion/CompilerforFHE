@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.24)
+project(CrossFHE LANGUAGES C CXX)
+
+option(CROSSFHE_ENABLE_LEGACY_COMPILER "Build the original NISL CPU/GPU compiler instead" OFF)
+if(CROSSFHE_ENABLE_LEGACY_COMPILER)
+  include(build-tools/cmake/LegacyCompiler.cmake)
+  return()
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(CROSSFHE_BUILD_COMPILER "Build FHE dialects, passes and compiler tools" ON)
+option(CROSSFHE_BUILD_BACKEND "Build the SEAL backend dependency" ON)
+set(CROSSFHE_LLVM_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/llvm-project"
+    CACHE PATH "LLVM source tree containing llvm/ and mlir/; empty for installed MLIR")
+set(CROSSFHE_SEAL_SOURCE "" CACHE PATH "Pinned Microsoft SEAL source tree")
+
+if(CROSSFHE_BUILD_COMPILER)
+  include(build-tools/cmake/CrossFHELLVM.cmake)
+  add_subdirectory(compiler)
+  add_subdirectory(tools)
+endif()
+if(CROSSFHE_BUILD_BACKEND)
+  add_subdirectory(backend)
+endif()
+
+include(CTest)
+if(BUILD_TESTING AND CROSSFHE_BUILD_COMPILER)
+  add_subdirectory(tests)
+endif()

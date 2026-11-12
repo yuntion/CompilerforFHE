@@ -1,0 +1,19 @@
+\frametitle{具体示例：把 FHE 加乘操作实例化为库调用}
+\begin{columns}[T]
+\column{.48\textwidth}\card{交给 AI 的任务（示意）}{\small
+计算：$y=1.5x+0.125$。\\
+输入：CKKS 密文 $x$；常量公开。\\
+目标：固定版本 OpenFHE C++ API。\\
+约束：参数和操作顺序固定；服务端无私钥；仅补全 evaluator 中指定函数。\\
+附加：运行时头文件、API 片段与测试。}
+\column{.48\textwidth}\card{生成位置与代码（示意）}{\small
+现有代码生成器已能生成模型逻辑；AI 可用于新增库适配或受限接口补全。}
+\begin{verbatim}
+auto a = cc->EvalMult(x, 1.5);
+auto y = cc->EvalAdd(a, 0.125);
+return y;
+\end{verbatim}
+{\scriptsize\color{Muted}仅表示核心调用；上下文、层级及缩放维护由固定运行时约定，并通过构建与数值测试确认。}
+\end{columns}
+\takeaway{验收：构建成功、参数约束满足，且 $|\hat y_i-y_i|\leq\tau_{abs}+\tau_{rel}|y_i|$。}
+\source{README.md; main.pdf，第2.4节; 本页为设计示例，非已完成联调结果}

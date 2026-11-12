@@ -1,0 +1,20 @@
+set(LLVM_TARGET_DEFINITIONS "${CMAKE_CURRENT_SOURCE_DIR}/include/heir/IR/FHE/HEIR.td")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include")
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/heir/IR/FHE")
+mlir_tablegen(include/heir/IR/FHE/HEIRDialect.h.inc -gen-dialect-decls -dialect=heir)
+mlir_tablegen(include/heir/IR/FHE/HEIRDialect.cpp.inc -gen-dialect-defs -dialect=heir)
+mlir_tablegen(include/heir/IR/FHE/HEIRTypes.h.inc -gen-typedef-decls -typedefs-dialect=heir)
+mlir_tablegen(include/heir/IR/FHE/HEIRTypes.cpp.inc -gen-typedef-defs -typedefs-dialect=heir)
+mlir_tablegen(include/heir/IR/FHE/HEIR.h.inc -gen-op-decls)
+mlir_tablegen(include/heir/IR/FHE/HEIR.cpp.inc -gen-op-defs)
+add_public_tablegen_target(CrossFHEHEIRIncGen)
+
+add_library(CrossFHEHEIR HEIRDialect.cpp)
+add_dependencies(CrossFHEHEIR CrossFHEHEIRIncGen)
+target_include_directories(CrossFHEHEIR PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include")
+target_link_libraries(CrossFHEHEIR PUBLIC MLIRIR MLIRArithDialect
+  MLIREmitCDialect MLIRSideEffectInterfaces MLIRInferTypeOpInterface)
+if(NOT MSVC)
+  target_compile_options(CrossFHEHEIR PRIVATE -fno-rtti)
+endif()

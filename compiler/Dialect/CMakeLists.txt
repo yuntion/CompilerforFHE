@@ -1,0 +1,6 @@
+if(NOT CROSSFHE_ENABLE_LEGACY_COMPILER)
+  add_subdirectory(HEIR)
+  add_subdirectory(SCFHE)
+  add_library(CrossFHEDialect INTERFACE)
+  target_link_libraries(CrossFHEDialect INTERFACE CrossFHEHEIR CrossFHESCFHE)
+endif()

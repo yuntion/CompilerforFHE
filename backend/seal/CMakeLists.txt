@@ -1,0 +1,7 @@
+find_package(SEAL 4.1.2 EXACT REQUIRED CONFIG)
+add_executable(model-runner runner.cpp)
+target_include_directories(model-runner PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(model-runner PRIVATE SEAL::seal)
+if(MINGW)
+  target_link_libraries(model-runner PRIVATE bcrypt)
+endif()

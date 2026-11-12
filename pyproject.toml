@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crossfhe-front"
+version = "0.1.0"
+description = "PyTorch/ONNX frontend and driver for the CrossFHE MLIR compiler"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26,<3", "onnx>=1.16,<2"]
+
+[project.optional-dependencies]
+torch = ["torch>=2.4,<3"]
+dev = ["pytest>=8,<9", "cmake>=3.24,<4", "ninja>=1.11"]
+
+[project.scripts]
+crossfhe = "crossfhe.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["front"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/front", "tests/compiler", "tests/backend", "tests/e2e"]
+markers = ["fhe: real native compilation and encrypted execution"]

@@ -1,0 +1,253 @@
+% !TeX program = xelatex
+\documentclass[aspectratio=169,10pt]{beamer}
+\usepackage[UTF8,fontset=none]{ctex}
+\setCJKmainfont{SimSun}
+\setCJKsansfont{Microsoft YaHei}
+\setCJKmonofont{FangSong}
+\setlength{\tabcolsep}{3pt}
+\usepackage{tikz,booktabs,array,amsmath}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\definecolor{Navy}{HTML}{063D84}
+\definecolor{Blue}{HTML}{0046A5}
+\definecolor{Teal}{HTML}{087E83}
+\definecolor{Pale}{HTML}{EAF3FF}
+\definecolor{Ink}{HTML}{182637}
+\definecolor{Muted}{HTML}{536274}
+\definecolor{Orange}{HTML}{E48D2B}
+\setbeamercolor{normal text}{fg=Ink,bg=white}
+\setbeamercolor{frametitle}{fg=Navy}
+\setbeamercolor{structure}{fg=Blue}
+\setbeamercolor{block title}{fg=Navy,bg=Pale}
+\setbeamercolor{block body}{fg=Ink,bg=Pale!45}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}{\color{Teal}\small$\bullet$}
+\setbeamersize{text margin left=9mm,text margin right=9mm}
+\setbeamertemplate{frametitle}{\vspace{4mm}\insertframetitle\par\vspace{2mm}{\color{Blue}\rule{\textwidth}{0.6pt}}}
+\setbeamertemplate{footline}{\hspace{9mm}\color{Muted}\tiny 毕业设计进度汇报\hfill CrossFHE / FHE-Coder\hspace{5mm}\insertframenumber\,/\,\inserttotalframenumber\hspace{9mm}\vspace{3mm}}
+\newcommand{\source}[1]{\par\vfill{\fontsize{6.3}{8}\selectfont\color{Muted}依据：\texttt{\detokenize{#1}}\par}}
+\newcommand{\takeaway}[1]{\par\vspace{3mm}\begin{beamercolorbox}[sep=2.5mm,wd=\textwidth]{block title}\color{Teal}\bfseries #1\end{beamercolorbox}}
+\newcommand{\card}[2]{\begin{block}{#1}#2\end{block}}
+\newcommand{\divider}[3]{\begin{frame}[plain]\begin{tikzpicture}[remember picture,overlay]\fill[Pale] (current page.north west) rectangle ([xshift=45mm]current page.south west);\node[text=Blue!18,font=\fontsize{80}{84}\selectfont\bfseries] at ([xshift=23mm]current page.west) {#1};\end{tikzpicture}\hspace{43mm}\begin{minipage}{95mm}{\color{Teal}\large PART #1}\par\vspace{5mm}{\color{Navy}\Huge\bfseries #2}\par\vspace{4mm}{\color{Muted}#3}\end{minipage}\end{frame}}
+\title{面向机器学习模型的\\同态加密编译与代码生成}
+\subtitle{近期毕业设计进度汇报}
+\author{史志颖}
+\institute{西北大学\quad 指导教师：唐占勇教授}
+\date{2026年11月11日}
+\begin{document}
+\begin{frame}[plain]
+\begin{tikzpicture}[remember picture,overlay]
+\fill[Navy] (current page.north west) rectangle ([yshift=-12mm]current page.north east);
+\fill[Pale] ([yshift=20mm]current page.south west) rectangle (current page.south east);
+\node[anchor=west,text=white,font=\small] at ([xshift=10mm,yshift=-6mm]current page.north west) {毕业设计阶段汇报\quad /\quad RESEARCH PROGRESS};
+\end{tikzpicture}
+\vspace{12mm}{\color{Navy}\LARGE\bfseries\inserttitle\par}\vspace{5mm}
+{\color{Teal}\large\insertsubtitle\par}\vspace{7mm}
+{\insertauthor\quad |\quad \insertinstitute\par}\vspace{2mm}{\color{Muted}\insertdate}
+\end{frame}
+
+\begin{frame}{阶段概览：编译链路已建立，重点转向可信生成与联调}
+\begin{columns}[T]
+\column{.32\textwidth}\card{01\quad 编译前端与执行基线}{PyTorch / ONNX 接入\\多级 FHE IR 降级\\SEAL / OpenFHE 执行\\[2mm]\color{Teal}已有历史端到端验证}
+\column{.32\textwidth}\card{02\quad AI 生成模块}{ReAct Agent 框架\\API 文档检索\\执行反馈与修复入口\\[2mm]\color{Orange}编译、安全检查需补强}
+\column{.32\textwidth}\card{03\quad 论文与研究组织}{绪论与相关技术已有正文\\编译器与 LLM 分工明确\\方法、实验章节待补充\\[2mm]\color{Teal}实现材料可支撑后续写作}
+\end{columns}
+\takeaway{下一阶段目标：形成“受约束生成—真实验证—反馈修复”的可复现闭环。}
+\source{README.md; fhe-coder/; main.pdf}
+\end{frame}
+
+\begin{frame}{研究问题：如何降低密文推理的开发与适配门槛？}
+\begin{columns}[T]
+\column{.32\textwidth}\card{模型语义难落地}{神经网络含矩阵运算、卷积与非线性；需要转换为密码库支持的计算原语。}
+\column{.32\textwidth}\card{同态状态难维护}{乘法深度、缩放因子与层级相互制约；跨方案转换还存在精度和资源成本。}
+\column{.32\textwidth}\card{跨库接口难统一}{SEAL、OpenFHE、TFHE 接口不同；代码能运行也不等于功能和安全性达标。}
+\end{columns}
+\vspace{4mm}
+\textbf{研究路线}\quad 编译器确定计算语义与约束，LLM 辅助目标库接口适配，验证工具决定候选代码是否可接受。
+\takeaway{保护秘密输入，保持公开模型语义，并让生成结果可检查、可追溯。}
+\source{main.pdf，第1章及第2.4节; README.md}
+\end{frame}
+
+\divider{01}{编译前端与执行基线}{模型接入 · 多级降级 · 密文执行}
+
+\begin{frame}{CrossFHE：从模型到密文执行的编译链路}
+\centering
+\begin{tikzpicture}[node distance=5mm,box/.style={draw=Blue!30,fill=Pale,rounded corners=2pt,minimum height=10mm,text width=29mm,align=center,font=\small},arr/.style={-{Stealth},thick,Teal}]
+\node[box] (a) {PyTorch / ONNX\\静态模型接入};
+\node[box,right=of a] (b) {func / arith\\公开参数、秘密输入};
+\node[box,right=of b] (c) {Libra SCFHE\\算术、比较、选择};
+\node[box,right=of c] (d) {HEIR / CHLOE\\RLWE / LWE};
+\draw[arr] (a)--(b);\draw[arr] (b)--(c);\draw[arr] (c)--(d);
+\node[box,below=12mm of d] (e) {C++ evaluator\\model.hpp};
+\node[box,left=of e] (f) {SEAL / OpenFHE\\密文执行};
+\node[box,left=of f] (g) {客户端解密\\参考结果比较};
+\draw[arr] (d)-- node[left,font=\scriptsize]{合法性检查} (e);\draw[arr] (e)--(f);\draw[arr] (f)--(g);
+\end{tikzpicture}
+\takeaway{原生 lowering 与代码生成位于 compiler/；Python 驱动负责流程编排。}
+\source{README.md，编译与执行链路; compiler/README.md}
+\end{frame}
+
+\begin{frame}{前端进展：保留模型语义，提前拒绝不支持的输入}
+\begin{columns}[T]
+\column{.49\textwidth}\card{已实现的接入能力}{\begin{itemize}\item PyTorch CPU / eval 导出，opset 17。\item ONNX opset 13--21 结构化导入。\item 静态形状检查、广播与算子展开。\item 输入浮点 tensor 标为秘密；权重、形状与索引常量公开。\end{itemize}}
+\column{.49\textwidth}\card{接口与诊断}{\begin{itemize}\item \texttt{export\_torch / import\_onnx}。\item 输出 MLIR 与 tensor mapping。\item 错误包含节点序号、名称与算子。\item 拒绝动态/空形状、秘密除法及依赖数据的 Python 分支。\end{itemize}}
+\end{columns}
+\takeaway{当前基线：静态推理、公开模型参数、秘密输入；张量运算按标量展开。}
+\source{front/README.md; front/crossfhe/frontend.py; README.md}
+\end{frame}
+
+\begin{frame}{执行后端：CKKS 算术与 FHEW 比较各司其职}
+\begin{columns}[T]
+\column{.48\textwidth}\card{SEAL CKKS}{支持常量、加减乘，以及重缩放、层级对齐和重线性化。\\[2mm]适用：仿射、平方 MLP、小 CNN、多项式 attention 核心。}
+\column{.48\textwidth}\card{OpenFHE 跨方案}{CKKS $\rightarrow$ FHEW sign $\rightarrow$ CKKS 掩码，支持比较、选择、ReLU 与 MaxPool。\\[2mm]转换过程在 OpenFHE 内完成。}
+\end{columns}
+\vspace{3mm}
+\textbf{执行分离}\quad \texttt{keygen} $\rightarrow$ \texttt{encrypt} $\rightarrow$ \texttt{evaluate} $\rightarrow$ \texttt{decrypt}\\[2mm]
+服务端 evaluator 不持有私钥；这是本地独立进程流程，尚非网络服务。
+\source{backend/README.md; README.md}
+\end{frame}
+
+\begin{frame}{验证进展：已有正确性基线，性能优化仍有明确空间}
+\begin{columns}[T]
+\column{.47\textwidth}\card{历史验证记录}{\textbf{3 项原生 CTest + 34 项 Python 测试}\\全部通过；Python 测试用时 243.99 s。\\[2mm]覆盖前端拒绝规则、IR 降级、C++ 生成及真实加密执行。\\[2mm]\scriptsize 记录环境：Windows x86-64，2026-09-29；本次未重新运行项目测试。}
+\column{.50\textwidth}\card{默认安全配置 ReLU：历史单次测量}{\small\begin{tabular}{@{}lr@{}}\toprule
+指标 & 观测值\\\midrule
+evaluator 时间 & 43.87 s\\
+LWE $\rightarrow$ CKKS 时间 & 36.62 s\\
+密钥生成墙钟时间 & 332.72 s\\
+评估键包 & 11.88 GB\\
+最大绝对误差 & $9.79\times10^{-6}$\\\bottomrule
+\end{tabular}}
+\end{columns}
+\takeaway{该样例约 83.5\% 的 evaluator 时间用于回转；可作为优化线索，尚不能推广为统计结论。}
+\source{docs/VALIDATION.md; docs/validation-junit.xml; docs/measurements/results.csv}
+\end{frame}
+
+\divider{02}{AI 辅助后端生成}{现有框架 · 实现核对 · 接口衔接}
+
+\begin{frame}{FHE-Coder：已有 Agent 与工具调用框架}
+\begin{columns}[T]
+\column{.53\textwidth}\card{现有模块}{\begin{itemize}\item \textbf{ReAct Agent}：组织推理、工具调用和反馈。\item \textbf{SummaryRAG}：检索函数签名与 API 摘要。\item \textbf{Compiler / Executor}：保存候选代码并接入测试。\item \textbf{Security Check}：TFHE API 规则检查入口。\item \textbf{实验脚本}：basic、formal、secure、RAG 等组合。\end{itemize}}
+\column{.44\textwidth}\card{可复用的研发基础}{已有任务 prompts、单元测试目录、库文档与交互界面。\\[3mm]可用于探索不同提示约束和工具组合。\\[3mm]\color{Muted}README 中的榜单属于模块上游说明，本汇报不作为毕设自测结果引用。}
+\end{columns}
+\source{fhe-coder/README.md; fhe-coder/tfhe_coder_agent.py; fhe-coder/tools/}
+\end{frame}
+
+\begin{frame}{源码核对：可信验证链路仍需补齐}
+\small
+\renewcommand{\arraystretch}{1.45}
+\begin{tabular}{p{23mm}p{57mm}p{53mm}}
+\toprule
+环节 & 当前源码状态 & 下一步改造\\\midrule
+真实编译 & \texttt{Compiler.compile} 保存 program.py 后直接返回成功 & 按目标语言执行真实构建或语法检查，返回退出码与日志\\
+安全检查 & API 正则检查已实现；解析 minimum\_lambda，但未强制阈值 & 启用参数约束、估计器与失败拒绝规则\\
+实验入口 & 全组合脚本内安全调用被注释；RAG 未注册进 Agent 工具列表 & 显式记录工具启用配置，统一实验入口\\
+前后端联调 & 已查看代码未体现 CrossFHE IR 到 Agent 的正式接口 & 定义生成契约、适配层与失败回退\\\bottomrule
+\end{tabular}
+\takeaway{优先让“成功”对应真实的构建、功能与安全检查结果。}
+\source{fhe-coder/tools/compiler.py; fhe-coder/tools/security_check.py; fhe-coder/test_formal_secure_rag_agent.py}
+\end{frame}
+
+\begin{frame}{拟议联调：编译器提供约束，LLM 完成接口实例化}
+\begin{columns}[T]
+\column{.48\textwidth}\card{生成输入契约}{\begin{itemize}\item 已确定的 FHE 操作序列与数据依赖。\item 类型、形状、公开/秘密属性。\item 后端库与版本、允许调用的 API。\item 固定参数、误差容限与代码骨架。\end{itemize}}
+\column{.48\textwidth}\card{验证与反馈闭环}{\begin{enumerate}\item 生成候选接口代码。\item 真实构建与参数检查。\item 密文运行，与两类参考结果比较。\item 返回诊断，限制轮数修复。\end{enumerate}}
+\end{columns}
+\vspace{3mm}
+\textbf{两类参考}\quad 原始明文模型衡量总体偏差；同近似明文程序定位密文执行与代码生成偏差。
+\takeaway{已有确定性 C++ 生成路径作为基线；AI 适配效果需通过对照实验确认。}
+\source{main.pdf，第2.4节; README.md; 本页接口为下一阶段设计}
+\end{frame}
+
+\begin{frame}{如何使用 AI 生成后端代码？}
+\small
+\textbf{核心回答}\quad 将编译器确定的 FHE 计算逻辑和约束交给 AI，结合目标库文档生成接口代码，再用真实构建与密文测试筛选、修复候选程序。
+\vspace{2mm}
+\begin{enumerate}
+\item \textbf{提取任务}：从最终 FHE IR 提取操作、数据依赖、类型与参数，形成结构化生成契约。
+\item \textbf{补充上下文}：检索固定版本的 API 文档与示例，提供函数签名、代码骨架和允许修改的区域。
+\item \textbf{约束生成}：由 FHE-Coder 的 Agent 生成 C++ evaluator 或 runtime 适配代码，保持操作语义与参数不变。
+\item \textbf{工具验证}：执行编译链接、接口/参数检查与加密测试，比较客户端解密结果和参考输出。
+\item \textbf{反馈修复}：把错误日志与失败用例返回 Agent；限制修复轮数，通过后保存代码与验证记录。
+\end{enumerate}
+\takeaway{编译器负责计算语义；AI 负责目标库代码适配；工具验证决定能否接受。}
+\source{main.pdf，第2.4节; fhe-coder/; 上述完整联调流程为拟实现方案}
+\end{frame}
+
+\begin{frame}[fragile]{具体示例：把 FHE 加乘操作实例化为库调用}
+\begin{columns}[T]
+\column{.48\textwidth}\card{交给 AI 的任务（示意）}{\small
+计算：$y=1.5x+0.125$。\\
+输入：CKKS 密文 $x$；常量公开。\\
+目标：固定版本 OpenFHE C++ API。\\
+约束：参数和操作顺序固定；服务端无私钥；仅补全 evaluator 中指定函数。\\
+附加：运行时头文件、API 片段与测试。}
+\column{.48\textwidth}\card{生成位置与代码（示意）}{\small
+现有代码生成器已能生成模型逻辑；AI 可用于新增库适配或受限接口补全。}
+\begin{verbatim}
+auto a = cc->EvalMult(x, 1.5);
+auto y = cc->EvalAdd(a, 0.125);
+return y;
+\end{verbatim}
+{\scriptsize\color{Muted}仅表示核心调用；上下文、层级及缩放维护由固定运行时约定，并通过构建与数值测试确认。}
+\end{columns}
+\takeaway{验收：构建成功、参数约束满足，且 $|\hat y_i-y_i|\leq\tau_{abs}+\tau_{rel}|y_i|$。}
+\source{README.md; main.pdf，第2.4节; 本页为设计示例，非已完成联调结果}
+\end{frame}
+
+\divider{03}{论文进展与后续安排}{已有正文 · 实验设计 · 阶段交付}
+
+\begin{frame}{论文进展：研究主线已形成，方法与实验需要落到正文}
+\begin{columns}[T]
+\column{.49\textwidth}\card{已有正文内容}{\textbf{第1章：绪论}\\研究背景、FHE 开发瓶颈、编译器研究现状与研究路线。\\[3mm]\textbf{第2章：相关技术}\\FHE / CKKS、MLIR、ONNX，以及受约束代码生成、分层验证与反馈修复。}
+\column{.49\textwidth}\card{待补齐内容}{第3、4章：方法与系统设计正文。\\[2mm]第5章：实验设置、对照、消融与结果。\\[2mm]第6章：总结与展望。\\[2mm]同步替换摘要等模板占位，统一封面和学位信息。}
+\end{columns}
+\takeaway{按“模型与 IR—受约束生成—分层验证”的逻辑组织实现与论文。}
+\source{main.pdf，目录、第1--2章及后续章节页面}
+\end{frame}
+
+\begin{frame}{实验计划：分别回答“能否运行、是否正确、是否值得”}
+\small\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{p{26mm}p{66mm}p{41mm}}
+\toprule
+实验问题 & 实验安排 & 评价指标\\\midrule
+编译链路可复现吗？ & 在目标 Ubuntu 环境重建；冻结依赖与参数；重跑分层测试 & 通过/跳过/失败数、构建日志\\
+AI 生成有效吗？ & 固定任务、模型与预算；比较基础生成、RAG、约束及反馈修复 & 构建率、功能通过率、联合通过率\\
+结果精度够吗？ & 同时对比原始模型与同近似参考；覆盖边界及近零输入 & 最大绝对/相对误差、任务精度\\
+执行成本如何？ & 安全配置下隔离测量并重复运行；拆分转换与求值时间 & 中位数/尾延迟、键大小、转换数\\\bottomrule
+\end{tabular}
+\takeaway{TOY 配置用于快速回归；正式性能比较需匹配安全级别、精度与计算语义。}
+\source{docs/VALIDATION.md; main.pdf，第2.4节; 本页为拟开展实验}
+\end{frame}
+
+\begin{frame}{后续四周：先补验证，再联调和固化实验}
+\small\renewcommand{\arraystretch}{1.65}
+\begin{tabular}{p{18mm}p{66mm}p{49mm}}
+\toprule
+阶段 & 工作重点 & 可检查的交付物\\\midrule
+第1周 & 目标环境复现；修复编译、安全检查与工具注册 & 真实失败诊断、参数拒绝用例、测试报告\\
+第2周 & 定义 IR/manifest 到 Agent 的生成契约；小算子联调 & 仿射或 ReLU 最小闭环、接口文档\\
+第3周 & 扩展 MLP / CNN 小模型；开展工具组合消融 & 固定配置、多次运行结果与失败分类\\
+第4周 & 汇总测量；补充方法、实验与总结章节 & 方法正文、图表、复现说明与演示案例\\\bottomrule
+\end{tabular}
+\vspace{4mm}
+\textbf{优先级}\quad 真实验证闭环 $>$ 稳定联调 $>$ 可复现实验 $>$ 扩大模型与优化范围。
+\source{基于当前代码与论文状态制定的建议排期，按汇报后四周安排}
+\end{frame}
+
+\begin{frame}{当前边界与需要聚焦的问题}
+\begin{columns}[T]
+\column{.48\textwidth}\card{已经具备}{静态模型接入、多级方言降级、确定性 C++ 生成、两套密码库执行，以及可复用的 AI 工具调用框架。}
+\column{.48\textwidth}\card{尚待完成}{前端与 AI 生成正式对接、可信安全检查、目标环境复测、方法与实验章节。\\[2mm]优化 pass 仍为 identity；尚无 tensor packing、自动方案选择和 FHE GPU codegen。}
+\end{columns}
+\takeaway{近期聚焦：以小模型完成可复现、可解释、可验证的端到端案例。}
+\source{README.md; fhe-coder/; main.pdf}
+\end{frame}
+
+\begin{frame}[plain]
+\centering\vspace{12mm}
+{\color{Navy}\Huge\bfseries 感谢各位老师}\par\vspace{6mm}
+{\color{Teal}\LARGE 敬请批评指正}\par\vspace{10mm}
+{\color{Muted}西北大学\quad |\quad 毕业设计进度汇报}
+\end{frame}
+\end{document}

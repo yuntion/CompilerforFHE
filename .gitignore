@@ -1,0 +1,12 @@
+.crossfhe/
+.venv/
+artifacts/
+build/
+build-compiler/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+*.pyc
+third_party/SEAL/
+third_party/OpenFHE/
+CrossFHE-source*.zip
