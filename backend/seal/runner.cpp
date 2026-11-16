@@ -67,7 +67,8 @@ static void keygen(const fs::path &client, const fs::path &server) {
   bits.front() = bits.back() = 60;
   std::size_t degree = 4096;
   unsigned total = 120 + 40 * levels;
-  while (CoeffModulus::MaxBitCount(degree, sec_level_type::tc128) < total) {
+  while (CoeffModulus::MaxBitCount(degree, sec_level_type::tc128) < total ||
+         degree/2 < crossfhe_generated::packed_period) {
     degree *= 2;
     if (degree > 32768) throw std::runtime_error("model depth exceeds supported 128-bit CKKS policy");
   }
@@ -85,8 +86,15 @@ static void keygen(const fs::path &client, const fs::path &server) {
   save(generator.secret_key(), client / "secret.seal");
   save(publicKey, server / "public.seal");
   save(relin, server / "relin.seal");
+  if (!crossfhe_generated::rotation_steps.empty()) {
+    GaloisKeys galois;
+    generator.create_galois_keys(crossfhe_generated::rotation_steps,galois);
+    save(galois, server / "galois.seal");
+  }
   std::cout << "{\"phase\":\"keygen\",\"ring_dimension\":" << degree
-            << ",\"depth\":" << levels << ",\"security_bits\":128}\n";
+            << ",\"depth\":" << levels << ",\"security_bits\":128"
+            << ",\"slots\":" << degree/2
+            << ",\"rotation_keys\":" << crossfhe_generated::rotation_steps.size() << "}\n";
 }
 static void encrypt(const fs::path &client, const fs::path &server,
                     const fs::path &plain, const fs::path &cipher) {
@@ -96,11 +104,24 @@ static void encrypt(const fs::path &client, const fs::path &server,
   Encryptor encryptor(context, key);
   CKKSEncoder encoder(context);
   auto values = readValues(plain);
-  if (values.size() != crossfhe_generated::input_count)
+  if (values.size() != crossfhe_generated::input_value_count)
     throw std::runtime_error("input count does not match compiled model");
   std::ofstream stream(cipher, std::ios::binary);
   if (!stream) throw std::runtime_error("cannot create ciphertext file");
-  writeCount(stream, values.size());
+  writeCount(stream, crossfhe_generated::input_count);
+  if (crossfhe_generated::packed_period) {
+    const auto period=crossfhe_generated::packed_period;
+    if (period>encoder.slot_count() || encoder.slot_count()%period)
+      throw std::runtime_error("packed period does not fit physical slots");
+    std::vector<double> packed(encoder.slot_count(),0);
+    for (std::size_t i=0; i<packed.size(); ++i)
+      if (i%period<values.size()) packed[i]=values[i%period];
+    Plaintext plaintext; Ciphertext encrypted;
+    encoder.encode(packed,std::pow(2.0,40),plaintext);
+    encryptor.encrypt(plaintext,encrypted);
+    encrypted.save(stream,compr_mode_type::none);
+    return;
+  }
   for (double value : values) {
     Plaintext plaintext; Ciphertext encrypted;
     encoder.encode(value, std::pow(2.0, 40), plaintext);
@@ -123,7 +144,9 @@ static void evaluate(const fs::path &server, const fs::path &input, const fs::pa
     value.load(context, stream);
     if (!stream) throw std::runtime_error("truncated ciphertext file");
   }
-  crossfhe::SealRuntime runtime(context, key, relin, std::pow(2.0, 40));
+  GaloisKeys galois;
+  if (!crossfhe_generated::rotation_steps.empty()) load(galois,context,server / "galois.seal");
+  crossfhe::SealRuntime runtime(context, key, relin, std::pow(2.0, 40), &galois);
   auto start = std::chrono::steady_clock::now();
   auto results = crossfhe_generated::evaluate(runtime, values);
   auto seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
@@ -133,6 +156,11 @@ static void evaluate(const fs::path &server, const fs::path &input, const fs::pa
   for (const auto &value : results) value.save(destination, compr_mode_type::none);
   std::cout << "{\"phase\":\"evaluate\",\"seconds\":" << seconds
             << ",\"add\":" << runtime.counts.add
+            << ",\"add_plain\":" << runtime.counts.add_plain
+            << ",\"rotations\":" << runtime.counts.rotations
+            << ",\"materializations\":" << runtime.counts.materializations
+            << ",\"input_ciphertexts\":" << values.size()
+            << ",\"output_ciphertexts\":" << results.size()
             << ",\"multiply_plain\":" << runtime.counts.multiply_plain
             << ",\"multiply_cipher\":" << runtime.counts.multiply_cipher
             << ",\"rescale\":" << runtime.counts.rescale
@@ -154,7 +182,11 @@ static void decrypt(const fs::path &client, const fs::path &input, const fs::pat
     cipher.load(context, stream);
     decryptor.decrypt(cipher, plain);
     encoder.decode(plain, decoded);
-    results.push_back(decoded.at(0));
+    if (crossfhe_generated::packed_period) {
+      if (crossfhe_generated::output_value_count>decoded.size())
+        throw std::runtime_error("output elements exceed physical slots");
+      results.insert(results.end(),decoded.begin(),decoded.begin()+crossfhe_generated::output_value_count);
+    } else results.push_back(decoded.at(0));
   }
   writeValues(results, output);
 }

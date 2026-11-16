@@ -1,6 +1,6 @@
 # 新增编译器 Pass
 
-本文使用当前项目的手工 `PassWrapper` 和注册方式，命令使用 Ubuntu/Bash。示例是一个独立的深度契约检查 pass，用于演示扩展流程；它尚未加入正式源码，也不填入现有空优化入口。
+本文使用当前项目的手工 `PassWrapper` 和注册方式，命令使用 Ubuntu/Bash。示例是一个独立的深度契约检查 pass，用于演示扩展流程；它尚未加入正式源码，也不替代现有专项优化。
 
 ## 1. 选择模块和执行阶段
 
@@ -75,7 +75,7 @@ std::unique_ptr<mlir::Pass> createCheckDepthContractPass() {
 std::unique_ptr<mlir::Pass> createCheckDepthContractPass();
 ```
 
-在 `compiler/Pipelines/FHE/OptimizationHooks.cpp` 的 `registerCrossFHEPasses` 中，保留原来的三个注册并新增一项：
+在 `compiler/Pipelines/FHE/OptimizationHooks.cpp` 的 `registerCrossFHEPasses` 中，保留现有的所有 pass 注册并新增一项：
 
 ```cpp
 void registerCrossFHEPasses() {
@@ -97,7 +97,7 @@ target_sources(CrossFHEPipelines PRIVATE CheckDepthContract.cpp)
 ## 4. 编译和手工运行
 
 ```bash
-source .venv/bin/activate
+conda activate CompilerforFHE
 cmake --build build --target crossfhe-opt --parallel 4
 build/bin/crossfhe-opt --help
 
@@ -168,7 +168,7 @@ set_tests_properties(crossfhe-depth-contract-missing PROPERTIES WILL_FAIL TRUE)
 
 建议先把新 pass 作为独立 CLI 选项验证，再确定默认顺序。可以在 `front/crossfhe/pipeline.py` 的 `steps` 中新增原生工具调用和日志，或在编译器中定义命名 pipeline；不要把 pass 实现写到 Python 前端。
 
-当前 `--ppml-fhe-optimize` 为 identity，Python 驱动和 `tests/e2e/test_models.py` 都要求 `03_fhe.mlir`、`04_optimized.mlir` 字节相同。启用实际优化后，需要明确调整这两个 identity 检查，同时保留 verifier、artifact hash 和参考语义/精度测试。不要只移除检查而不补上优化正确性验证。
+当前 `--ppml-fhe-optimize` 已实现局部简化、CSE、DCE 和资源契约刷新；Python 驱动使用原生导出的优化前后资源 JSON，不再要求两个阶段 IR 字节相同。新增 pass 应继续保留 verifier、artifact hash、资源契约和明文/密文精度验证，并添加针对实际变换的 A/B 测试。现有 pass 见 [PASSES.md](development/PASSES.md)。
 
 最后运行对应原生检查和全链路：
 

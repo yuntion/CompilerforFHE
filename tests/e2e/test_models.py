@@ -22,8 +22,11 @@ def test_models_match_pytorch_with_actual_fhe(tmp_path,name,backend):
                           insecure_demo=backend=="openfhe-cross",atol=0.001,rtol=0.001)
     assert report["validation"]["passed"]
     assert report["server_has_no_secret_key"]
-    assert (artifact/"03_fhe.mlir").read_bytes()==(artifact/"04_optimized.mlir").read_bytes()
     manifest=json.loads((artifact/"manifest.json").read_text())
+    before,after=(manifest["resource_analysis"][name] for name in ("before","after"))
+    assert after["multiplicative_depth"]<=before["multiplicative_depth"]
+    assert after["logic_comparisons"]<=before["logic_comparisons"]
+    assert manifest["optimization"]=="scalar"
     if manifest["logic_comparisons"]:
         runtime=report["phases"]["evaluate"]["runtime"]
         assert runtime["ckks_to_logic"]==runtime["logic_bootstrap"]==runtime["logic_to_ckks"]==manifest["logic_comparisons"]

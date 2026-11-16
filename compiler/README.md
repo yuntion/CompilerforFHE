@@ -43,7 +43,7 @@ arith.cmpf / arith.select
 
 ## 添加优化
 
-`Pipelines/FHE/OptimizationHooks.cpp` 的 `runOnOperation` 当前为空。后续按研究路线增加 layout、scheme-region、数值范围、level/rescale 等 pass，再在这里确定顺序。当前 pipeline 不执行上游论文的优化。
+`Pipelines/FHE/OptimizationHooks.cpp` 编排手写的简化、CSE、DCE 与资源契约刷新；独立 pass 另含显式乘法平衡和有界 ReLU 近似。函数通过 `ppml.fhe_enabled` 标记控制触发。使用方法、数值前提及当前能力边界见 [Pass 文档](../docs/development/PASSES.md)，文献依据见 [阅读记录](../docs/development/ARTICLES.md)。
 
 ## 编译器测试
 
@@ -58,3 +58,5 @@ python -m pytest tests/compiler -q --basetemp .crossfhe/test-compiler
 CTest 独立检查方言注册、MLIR 降级和 C++ 生成。Python 原生测试检查 malformed IR、后端拒绝、未完成编译产物和导出安全条件。端到端测试进一步编译生成代码并执行真实密文运算。
 
 原仓库的 CPU/GPU、TOSA 和旧 NISL 工具代码保留为可选旧路径，默认 FHE 构建不启用它们。
+
+`--ppml-fhe-matvec='strategy=diagonal|bsgs|auto'` 将 `heir.matvec` 降为显式打包原语，接入 SEAL CPU CKKS 后端。此 pass 使用独立的周期槽位布局和经过 verifier 检查的公开矩阵属性，详见 [研究与实现报告](../docs/development/MATVEC.md)。

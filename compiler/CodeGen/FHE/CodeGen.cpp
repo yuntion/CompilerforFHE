@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <set>
 
 using namespace mlir;
 LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
@@ -33,7 +34,8 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
   }
   auto logic = function->getAttrOfType<IntegerAttr>("ppml.logic_comparisons");
   auto openfheDepth = function->getAttrOfType<IntegerAttr>("ppml.openfhe_depth");
-  if (!logic || !openfheDepth || depth.getInt()<0 || openfheDepth.getInt()>128) {
+  if (!logic || !openfheDepth || depth.getInt()<0 || logic.getInt()<0 ||
+      openfheDepth.getInt()<depth.getInt() || openfheDepth.getInt()>128) {
     function.emitError("invalid depth/scheme contract"); return failure();
   }
   if (backend == "seal-ckks" && logic.getInt()) {
@@ -43,11 +45,71 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
     if (!isa<heir::RLWECipherType>(type)) { function.emitError("expected RLWE inputs"); return failure(); }
   for (Type type : function.getFunctionType().getResults())
     if (!isa<heir::RLWECipherType>(type)) { function.emitError("expected RLWE outputs"); return failure(); }
+  auto layout = function->getAttrOfType<StringAttr>("ppml.layout");
+  bool packed = layout && layout.getValue()=="periodic";
+  unsigned period=0, inputElements=function.getNumArguments(), outputElements=function.getNumResults();
+  std::set<int64_t> rotations;
+  if (layout && !packed && layout.getValue()!="one-scalar-per-ciphertext") {
+    function.emitError("unsupported CKKS layout"); return failure();
+  }
+  if (packed) {
+    auto in=function->getAttrOfType<IntegerAttr>("ppml.input_elements");
+    auto out=function->getAttrOfType<IntegerAttr>("ppml.output_elements");
+    if (backend!="seal-ckks" || function.getNumArguments()!=1 || function.getNumResults()!=1 || logic.getInt()) {
+      function.emitError("periodic packed evaluators require seal-ckks, one input/output ciphertext and no logic"); return failure();
+    }
+    auto type=cast<heir::RLWECipherType>(function.getArgument(0).getType());
+    int size=type.getSize();
+    if (!type.getPlaintextType().isF64() || size<1 || size>16384 || (size&(size-1)) ||
+        function.getResultTypes()[0]!=type || !in || !out ||
+        in.getInt()<1 || in.getInt()>size || out.getInt()<1 || out.getInt()>size) {
+      function.emitError("invalid periodic packed shape contract"); return failure();
+    }
+    period=size; inputElements=in.getInt(); outputElements=out.getInt();
+  } else {
+    for (Type type : llvm::concat<const Type>(function.getArgumentTypes(),function.getResultTypes())) {
+      auto cipher=cast<heir::RLWECipherType>(type);
+      if (cipher.getSize()!=1 || !cipher.getPlaintextType().isF64()) {
+        function.emitError("non-scalar cipher requires an explicit periodic layout contract"); return failure();
+      }
+    }
+  }
+  unsigned observedDepth=0;
+  llvm::DenseMap<Value,unsigned> packedDepths;
+  for (Operation &op : function.getBody().front()) {
+    if (isa<func::ReturnOp>(op)) continue;
+    StringRef name=op.getName().getStringRef();
+    if (name.startswith("heir.packed_")!=packed) {
+      op.emitError("cannot mix packed and scalar operations; lower MatVec first"); return failure();
+    }
+    if (!packed) continue;
+    auto type=function.getArgument(0).getType();
+    if (op.getNumResults()!=1 || op.getResult(0).getType()!=type ||
+        llvm::any_of(op.getOperandTypes(),[&](Type t) { return t!=type; })) {
+      op.emitError("packed primitive does not match evaluator period"); return failure();
+    }
+    unsigned d=0;
+    for (Value value : op.getOperands()) d=std::max(d,packedDepths.lookup(value));
+    if (name=="heir.packed_mul_plain") ++d;
+    if (name=="heir.packed_rotate") rotations.insert(op.getAttrOfType<IntegerAttr>("step").getInt());
+    packedDepths[op.getResult(0)]=d; observedDepth=std::max(observedDepth,d);
+  }
+  if (packed && observedDepth!=depth.getInt()) {
+    function.emitError("packed depth contract is stale; refresh it before codegen"); return failure();
+  }
   std::ostringstream code;
   code << "#pragma once\n#include \"" << (backend == "seal-ckks" ? "seal_runtime.hpp" : "openfhe_runtime.hpp")
        << "\"\n#include <vector>\nnamespace crossfhe_generated {\n";
   code << "inline constexpr std::size_t input_count = " << function.getNumArguments() << ";\n";
   code << "inline constexpr std::size_t output_count = " << function.getNumResults() << ";\n";
+  if (backend=="seal-ckks") {
+    code << "inline constexpr std::size_t packed_period = " << period << ";\n";
+    code << "inline constexpr std::size_t input_value_count = " << inputElements << ";\n";
+    code << "inline constexpr std::size_t output_value_count = " << outputElements << ";\n";
+    code << "inline const std::vector<int> rotation_steps = {";
+    for (auto step : rotations) code << step << ",";
+    code << "};\n";
+  }
   code << "inline constexpr unsigned depth = " << depth.getInt() << ";\n";
   code << "inline constexpr unsigned openfhe_depth = " << openfheDepth.getInt() << ";\n";
   code << "inline constexpr bool requires_logic = " << (logic.getInt() ? "true" : "false") << ";\n";
@@ -88,6 +150,24 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
     StringRef operation = op.getName().getStringRef();
     for (Value operand : op.getOperands())
       if (!names.count(operand)) { op.emitError("undefined codegen operand"); return failure(); }
+    if (packed) {
+      code << "  auto " << name << " = runtime.";
+      if (operation=="heir.packed_rotate")
+        code << "rotate(" << names.lookup(op.getOperand(0)) << ", "
+             << op.getAttrOfType<IntegerAttr>("step").getInt() << ");\n";
+      else if (operation=="heir.packed_zero")
+        code << "zero_like(" << names.lookup(op.getOperand(0)) << ");\n";
+      else if (operation=="heir.packed_add")
+        code << "add(" << names.lookup(op.getOperand(0)) << ", " << names.lookup(op.getOperand(1)) << ");\n";
+      else if (operation=="heir.packed_mul_plain" || operation=="heir.packed_add_plain") {
+        code << (operation=="heir.packed_mul_plain" ? "mul_periodic(" : "add_periodic(")
+             << names.lookup(op.getOperand(0)) << ", std::vector<double>{";
+        for (double value : op.getAttrOfType<DenseFPElementsAttr>("values").getValues<double>())
+          code << std::setprecision(17) << value << ",";
+        code << "});\n";
+      } else { op.emitError("unsupported packed primitive"); return failure(); }
+      continue;
+    }
     if (operation == "heir.materialize") {
       if (op.getNumOperands() != 1 || !op.getOperand(0).getType().isF64()) {
         op.emitError("only public-constant materialization is supported");

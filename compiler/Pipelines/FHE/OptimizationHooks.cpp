@@ -1,4 +1,5 @@
 #include "Pipelines/FHE/Passes.h"
+#include "Pipelines/FHE/Optimizations.h"
 #include "mlir/IR/BuiltinOps.h"
 
 namespace crossfhe {
@@ -8,10 +9,11 @@ struct OptimizationHook
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(OptimizationHook)
   llvm::StringRef getArgument() const final { return "ppml-fhe-optimize"; }
   llvm::StringRef getDescription() const final {
-    return "Reserved PPML FHE optimization hook (identity)";
+    return "Simplify, share and prune marked scalar FHE computations, then refresh resource contracts";
   }
   void runOnOperation() final {
-    // Add scheme/layout/nonlinear/maintenance passes here after the baseline.
+    if (mlir::failed(optimizeFHE(getOperation(), true, true, true)))
+      signalPassFailure();
   }
 };
 }
@@ -22,5 +24,8 @@ void registerCrossFHEPasses() {
   mlir::registerPass([] { return createLowerToSCFHEPass(); });
   mlir::registerPass([] { return createLowerToHEIRPass(); });
   mlir::registerPass([] { return createOptimizationHookPass(); });
+  mlir::registerPass([] { return createApproximateReluPass(); });
+  mlir::registerPass([] { return createMatVecPass(); });
+  registerFHEOptimizationPasses();
 }
 }

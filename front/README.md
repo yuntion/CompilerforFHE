@@ -17,7 +17,7 @@ Python 驱动只编排工具调用。SCFHE/HEIR 降级、方言 verifier 和 C++
 
 ## 导出与导入 API
 
-在仓库根目录安装 `python -m pip install --no-deps -e .` 后：
+在 `CompilerforFHE` 环境中执行 `export PYTHONPATH="$PWD/front${PYTHONPATH:+:$PYTHONPATH}"` 可直接使用源码，也可按需安装 `python -m pip install --no-deps -e .`：
 
 ```python
 import torch
@@ -33,6 +33,8 @@ Path("artifacts/01_arith.mlir").write_text(mlir, encoding="utf-8")
 ```
 
 `export_torch` 使用 CPU/eval 推理模式、opset 17 和静态输入形状。输出是一个 tensor 或 tensor tuple。若模型将秘密 tensor 转成 Python 值，或使用依赖 tensor 数据的 Python `if`，导出器会拒绝相应 tracing 警告，避免固化运行时逻辑。使用 `torch.where` 等 tensor 操作表达选择。
+
+公开仿射 MatVec 可以在 `compile_onnx` / `compile_torch` 传入 `backend="seal-ckks", packing="auto"`（也可选 `diagonal` / `bsgs`）。此路径在标量化前保留矩阵结构，再由原生 pass 降为 CPU CKKS SIMD。支持单个秘密向量、公开 MatMul/Gemm 与偏置；不支持的网络明确拒绝。CLI 示例：`python -m crossfhe demo affine --backend seal-ckks --packing auto --output artifacts/affine-packed`。详细布局和验证见 [MatVec 报告](../docs/development/MATVEC.md)。
 
 `import_onnx` 接受 opset 13..21。运行时浮点输入标为秘密，initializer、形状和索引常量公开；数值运算提升到 f64。错误包含 ONNX node 的序号、名称与算子。完整支持表见 [OPERATORS.md](../docs/OPERATORS.md)。
 
@@ -57,3 +59,5 @@ python -m pytest tests\front -q --basetemp .crossfhe\test-front
 ```
 
 覆盖不支持的非线性、秘密除法、动态/空形状、dtype、公开形状计算、scalar limit 和非有限常量等。原生诊断与完整推理分别在 `tests/compiler` 和 `tests/e2e`。
+
+编译 API 新增 `optimization="none"/"scalar"/"depth"` 和显式 `relu_bound`/`relu_max_error` 参数；实际前后资源与近似契约写入 manifest。详见 [Pass 文档](../docs/development/PASSES.md)。

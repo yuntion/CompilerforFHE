@@ -82,6 +82,8 @@ struct LowerToSCFHE : PassWrapper<LowerToSCFHE, OperationPass<ModuleOp>> {
       mapping.map(op.getResult(0),lowered->getResult(0));
     }
     replacement->setAttr("ppml.model_parameters",builder.getStringAttr("public"));
+    replacement->setAttr("ppml.fhe_enabled",function->getAttr("ppml.fhe_enabled")
+        ? function->getAttr("ppml.fhe_enabled") : builder.getBoolAttr(true));
     replacement->setAttr("ppml.layout",builder.getStringAttr("one-scalar-per-ciphertext"));
     function.erase();
   }

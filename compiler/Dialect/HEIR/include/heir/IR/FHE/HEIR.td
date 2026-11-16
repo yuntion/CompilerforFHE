@@ -461,6 +461,40 @@ def FHERotateOp: HEIR_Op<"rotate", [Pure]> {
   let hasFolder = 1;
 }
 
+// Public affine MatVec and its explicit CKKS SIMD lowering. The cipher size
+// denotes a power-of-two period, repeated over all physical CKKS slots.
+def MatVecOp : HEIR_Op<"matvec", [Pure]> {
+  let arguments = (ins RLWECipher:$input, ElementsAttr:$matrix, ElementsAttr:$bias);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+def PackedRotateOp : HEIR_Op<"packed_rotate", [Pure]> {
+  let arguments = (ins RLWECipher:$input, I64Attr:$step);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+def PackedMulPlainOp : HEIR_Op<"packed_mul_plain", [Pure]> {
+  let arguments = (ins RLWECipher:$input, ElementsAttr:$values);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+def PackedAddPlainOp : HEIR_Op<"packed_add_plain", [Pure]> {
+  let arguments = (ins RLWECipher:$input, ElementsAttr:$values);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+def PackedAddOp : HEIR_Op<"packed_add", [Pure]> {
+  let arguments = (ins RLWECipher:$lhs, RLWECipher:$rhs);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+// Fresh public-key encryption of zero at the input's level; never CSE this.
+def PackedZeroOp : HEIR_Op<"packed_zero", []> {
+  let arguments = (ins RLWECipher:$input);
+  let results = (outs RLWECipher:$output);
+  let hasVerifier = 1;
+}
+
 def FHEMaterializeOp: HEIR_Op<"materialize", [Pure]> {
   let summary = "No-op operation used to preserve consistency of type system during type conversion";
 

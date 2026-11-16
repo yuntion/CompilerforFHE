@@ -1,4 +1,4 @@
-add_library(CrossFHEPipelines OptimizationHooks.cpp)
+add_library(CrossFHEPipelines OptimizationHooks.cpp Optimizations.cpp ApproximateRelu.cpp MatVec.cpp)
 target_link_libraries(CrossFHEPipelines PUBLIC CrossFHEConversion MLIRPass)
 if(NOT MSVC)
   target_compile_options(CrossFHEPipelines PRIVATE -fno-rtti)

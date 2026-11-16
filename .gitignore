@@ -10,3 +10,7 @@ __pycache__/
 third_party/SEAL/
 third_party/OpenFHE/
 CrossFHE-source*.zip
+articles
+
+docs/development
+docs/validation

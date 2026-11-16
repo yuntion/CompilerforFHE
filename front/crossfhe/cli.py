@@ -19,6 +19,11 @@ def main(argv=None):
         command.add_argument("--output",type=Path,required=True)
         command.add_argument("--backend",choices=("openfhe-cross","seal-ckks"),default="openfhe-cross")
         command.add_argument("--max-operations",type=int,default=50000)
+        command.add_argument("--optimization",choices=("none","scalar","depth"),default="scalar")
+        command.add_argument("--packing",choices=("none","diagonal","bsgs","auto"),default="none",
+                             help="Explicit CPU CKKS SIMD path for a single public affine MatVec (SEAL)")
+        command.add_argument("--relu-bound",type=float,help="Declared absolute bound on every approximated ReLU input")
+        command.add_argument("--relu-max-error",type=float,help="Accepted local polynomial approximation error")
         if name=="demo": _run_options(command)
     runner=commands.add_parser("run")
     runner.add_argument("artifact",type=Path)
@@ -43,11 +48,13 @@ def main(argv=None):
             print(args.output.resolve()); return 0
         config=read_config(args.config)
         if args.command=="compile":
-            artifact=compile_onnx(args.model,args.output,config=config,backend=args.backend,max_operations=args.max_operations)
+            artifact=compile_onnx(args.model,args.output,config=config,backend=args.backend,max_operations=args.max_operations,
+                optimization=args.optimization,relu_bound=args.relu_bound,relu_max_error=args.relu_max_error,packing=args.packing)
             print(artifact); return 0
         if args.command=="demo":
             model,inputs=make_demo(args.model)
-            artifact,arrays,reference=compile_torch(model,inputs,args.output,config=config,backend=args.backend,max_operations=args.max_operations)
+            artifact,arrays,reference=compile_torch(model,inputs,args.output,config=config,backend=args.backend,max_operations=args.max_operations,
+                optimization=args.optimization,relu_bound=args.relu_bound,relu_max_error=args.relu_max_error,packing=args.packing)
         else:
             artifact=args.artifact
             with np.load(args.inputs,allow_pickle=False) as data: arrays={n:data[n] for n in data.files}

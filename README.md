@@ -2,7 +2,9 @@
 
 CrossFHE 是基于 MLIR 的同态加密编译器。项目主干是 `compiler/`：它定义 FHE 方言，将公开算术程序降级为加密计算，并生成调用 FHE 库的 C++ evaluator。`front/` 负责 PyTorch/ONNX 接入，`backend/` 负责密码库适配和加密执行。
 
-当前研究方向是 **CKKS 算术 + Logic FHE 非线性计算**。本版采用 Libra 的 SCFHE 方言及 HEIR/CHLOE 的 RLWE/LWE 方言，接入 Microsoft SEAL 和 OpenFHE。优化 pass 留作后续研究入口。
+当前研究方向是 **CKKS 算术 + Logic FHE 非线性计算**。本版采用 Libra 的 SCFHE 方言及 HEIR/CHLOE 的 RLWE/LWE 方言，接入 Microsoft SEAL 和 OpenFHE。已加入手写的 FHE 简化、公共子表达式消除、无用运算裁剪和资源分析，并支持显式开启乘法平衡与有界 ReLU 近似；文献依据、开发计划和使用方式见 [开发计划](docs/development/PLAN.md) 与 [Pass 文档](docs/development/PASSES.md)。
+
+已增加 **SEAL CPU CKKS SIMD / 对角线 MatVec**：`--ppml-fhe-matvec` 将公开仿射矩阵向量乘法降为打包旋转、明文乘法与累加，可选择 diagonal、BSGS 或自动旋转数规划。研究依据、周期布局、使用命令和实测对比见 [MatVec 报告](docs/development/MATVEC.md)。
 
 ## 编译与执行链路
 
@@ -18,7 +20,7 @@ Libra SCFHE: 算术、比较、选择
         v  compiler/Conversion/FHE/LowerToHEIR.cpp
 HEIR/CHLOE: RLWE(CKKS) + LWE(Logic FHE) + 显式方案转换
         |
-        v  compiler/Pipelines/FHE/: 当前为 identity 优化入口
+        v  compiler/Pipelines/FHE/: FHE 简化、CSE、DCE、资源契约刷新
 FHE MLIR
         |
         v  compiler/CodeGen/FHE/: 合法性检查、模型专用 C++ 生成
@@ -38,7 +40,7 @@ Compile_via_MLIR/
 │   ├── Dialect/HEIR/       HEIR/CHLOE 的 RLWE、LWE、转换操作和 ODS
 │   ├── Dialect/SCFHE/      Libra 的 SCFHE 操作、类型和注册实现
 │   ├── Conversion/FHE/     arith -> SCFHE -> HEIR 的降级 pass
-│   ├── Pipelines/FHE/      pass 声明、注册和预留优化入口
+│   ├── Pipelines/FHE/      pass 声明、注册与 FHE 专项优化
 │   └── CodeGen/FHE/        FHE MLIR -> C++ 的可复用代码生成库
 ├── front/crossfhe/         PyTorch 导出、ONNX 导入、Python 驱动
 ├── backend/
@@ -61,7 +63,7 @@ Compile_via_MLIR/
 | `front` | `export_torch`、`import_onnx`，输出 `func/arith` MLIR 和 tensor mapping | `python -m pytest tests/front -q --basetemp .crossfhe/test-front` |
 | `compiler/Dialect` | `!scfhe.scfhecipher`、`!heir.rlwecipher`、`!heir.lweciphervec` | CTest 方言注册测试；`crossfhe-opt --show-dialects` |
 | `compiler/Conversion` | `--ppml-to-scfhe`、`--ppml-to-heir` | CTest 降级测试；`python -m pytest tests/compiler -q --basetemp .crossfhe/test-compiler` |
-| `compiler/Pipelines` | `--ppml-fhe-optimize`，当前不改变 IR | 端到端测试比较优化前后 IR 的字节内容 |
+| `compiler/Pipelines` | `--ppml-fhe-optimize` 和独立专项 pass | 优化前后资源分析、原生正反例与真实加密 A/B 测试 |
 | `compiler/CodeGen` | `generateCpp`，输出 `model.hpp` | CTest 原生代码生成测试及端到端 C++ 编译 |
 | `backend` | `constant/add/sub/mul/to_logic/sign/to_ckks_mask/select`，输出密文 | `python -m pytest tests/backend --run-fhe -q --basetemp .crossfhe/test-backend` |
 | `tools` | `crossfhe-opt`、`crossfhe-translate` | `ctest --test-dir build --output-on-failure` |
@@ -82,38 +84,49 @@ Compile_via_MLIR/
 
 ## 构建整个项目
 
-以下使用 **Ubuntu 24.04 LTS、Bash、Python 3.12**。除安装系统依赖外，所有命令都在包含 `compiler/`、`front/`、`backend/` 的仓库根目录执行。Ubuntu 22.04 的默认 Python 是 3.10；若使用 3.12，请先准备对应解释器和 venv 支持。
+以下使用 **Ubuntu 24.04 LTS、Bash、Conda、Python 3.12**。除安装系统依赖外，所有命令都在包含 `compiler/`、`front/`、`backend/` 的仓库根目录执行，并在 `CompilerforFHE` Conda 环境中构建和验证。
 
 ### 1. 准备系统环境
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
-  build-essential clang git pkg-config ca-certificates \
-  python3.12 python3.12-venv python3.12-dev
+  build-essential clang git pkg-config ca-certificates
 
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+conda create -n CompilerforFHE --file=requirements.txt python=3.12
+conda activate CompilerforFHE
 ```
 
-每次打开新终端都先执行 `source .venv/bin/activate`。后续的 `python`、`cmake`、`ctest` 和 `ninja` 都使用该环境中的工具；特别是 Ubuntu 22.04 自带 CMake 可能低于本项目要求的 3.24。
-
-### 2. 安装前端与构建工具
-
-当前运行库后端使用 CPU，不需要 CUDA。先安装 CPU 版 PyTorch，再安装固定版本依赖和前端驱动：
+`requirements.txt` 记录的是 pip 包名和版本，直接交给 Conda 时可能因通道或版本差异而无法解析（例如 `torch` 和 `ninja==1.11.1.4`）。遇到这种情况，先创建环境，再在该环境内安装依赖：
 
 ```bash
-python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -r requirements.txt
-python -m pip install --no-deps -e .
+conda create -n CompilerforFHE python=3.12 pip
+conda activate CompilerforFHE
+```
+
+每次打开新终端都先执行 `conda activate CompilerforFHE`。后续的 `python`、`cmake`、`ctest` 和 `ninja` 都使用该环境中的工具；特别是 Ubuntu 22.04 自带 CMake 可能低于本项目要求的 3.24。Conda 需要配置有效的软件源；若通道只有 `nodefaults`，创建环境时需用 `--override-channels -c conda-forge` 等方式指定可用通道。
+
+### 2. 安装构建工具（前端可选）
+
+构建原生编译器和 SEAL/OpenFHE 后端不需要安装 `front/` 的 Python 包，也不需要 PyTorch/ONNX。跳过前端时，在已激活的 `CompilerforFHE` 环境中只安装构建工具：
+
+```bash
+python -m pip install cmake==3.31.6 ninja==1.11.1.4
 
 python --version
 cmake --version
 ninja --version
 ```
 
-`pyproject.toml` 安装的 Python 包名为 `crossfhe-front`，导入名和命令入口仍是 `crossfhe`。无需安装另外三个上游编译器的 Python 环境。
+需要使用后面的 PyTorch/ONNX 接入、Python 驱动或 Python 测试时，再在同一环境安装前端依赖。当前运行库后端使用 CPU，不需要 CUDA：
+
+```bash
+python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements.txt
+python -m pip install --no-deps -e .
+```
+
+`pyproject.toml` 安装的 Python 包名为 `crossfhe-front`，导入名和命令入口仍是 `crossfhe`。跳过前端安装时，使用原生 CTest 和直接编译 MLIR 的方式验证。无需安装另外三个上游编译器的 Python 环境。
 
 ### 3. 构建编译器和两个库后端
 
@@ -160,7 +173,7 @@ build/bin/crossfhe-opt --show-dialects
 ctest --test-dir build --output-on-failure
 ```
 
-方言列表应包含 `arith`、`func`、`scfhe` 和 `heir`。CTest 当前包含 3 项原生检查。修改编译器 C++ 或 ODS 后，用增量构建更新工具：
+方言列表应包含 `arith`、`func`、`scfhe` 和 `heir`。CTest 当前包含 7 项原生检查。修改编译器 C++ 或 ODS 后，用增量构建更新工具：
 
 ```bash
 cmake --build build --target crossfhe-opt crossfhe-translate --parallel 4
@@ -200,10 +213,11 @@ build/bin/crossfhe-opt artifacts/manual/03_fhe.mlir \
   --ppml-fhe-optimize --verify-each -o artifacts/manual/04_optimized.mlir
 build/bin/crossfhe-translate artifacts/manual/04_optimized.mlir \
   --backend=openfhe-cross -o artifacts/manual/model.hpp
-cmp artifacts/manual/03_fhe.mlir artifacts/manual/04_optimized.mlir
+build/bin/crossfhe-translate artifacts/manual/04_optimized.mlir \
+  --backend=openfhe-cross --emit-contract -o artifacts/manual/resources.json
 ```
 
-当前优化入口为空，`cmp` 应返回成功。纯算术 FHE IR 可选择 `--backend=seal-ckks`；ReLU 需要跨方案后端。
+默认优化会改变 IR 并重算资源契约，不再要求优化前后字节相同。纯算术 FHE IR 可选择 `--backend=seal-ckks`；默认 ReLU 使用跨方案后端，显式近似路线见 [Pass 文档](docs/development/PASSES.md)。
 
 生成的 C++ 可以单独编译为 runner。在默认 bootstrap 安装路径下：
 
@@ -238,6 +252,7 @@ outputs, report = run_encrypted(artifact, inputs, reference=reference)
 
 ```bash
 python -m crossfhe demo affine --backend seal-ckks --output artifacts/affine
+python -m crossfhe demo affine --backend seal-ckks --packing auto --output artifacts/affine-packed
 python -m crossfhe demo square-mlp --backend seal-ckks --output artifacts/mlp
 python -m crossfhe demo tiny-cnn --backend seal-ckks --output artifacts/cnn
 python -m crossfhe demo poly-attention --backend seal-ckks --output artifacts/attention
@@ -283,7 +298,9 @@ artifacts/<model>/
   01_arith.mlir           前端结果
   02_scfhe.mlir           方案无关 FHE 表示
   03_fhe.mlir             RLWE/LWE 和转换操作
-  04_optimized.mlir       优化结果，当前与上一阶段相同
+  04_optimized.mlir       优化结果
+  resources_before.json  优化前资源契约
+  resources_after.json   优化后资源契约
   model.hpp              模型专用 C++ evaluator
   manifest.json          tensor mapping、方案、深度、版本和文件 hash
   build/bin/model-runner  真实密码库执行程序
@@ -320,7 +337,11 @@ python -m pytest tests/e2e --run-fhe -q --basetemp .crossfhe/test-e2e
 
 集成测试覆盖仿射、平方 MLP、小 CNN、多项式 attention、ReLU、ReLU-MLP、MaxPool、分组/空洞卷积、BatchNorm 和秘密矩阵乘。OpenFHE 回归测试使用显式 TOY 参数；默认安全参数的 ReLU 单独测量。实际记录见 [docs/VALIDATION.md](docs/VALIDATION.md)，数据在 `docs/measurements/results.json` 和 `results.csv`。
 
-当前基线包含 **3 项原生 CTest 和 34 项 Python 测试**，此前验证全部通过。历史 XML 在 `docs/native-validation-junit.xml` 与 `docs/validation-junit.xml`。**Ubuntu 上的完整构建与加密执行尚未在本工作环境实测**，需在目标 Ubuntu 机器按上述步骤确认。默认安全参数的 ReLU 是历史功能测量，不能用作本机性能结果。
+优化前的基线包含 **3 项原生 CTest 和 34 项 Python 测试**。2026-11-16 已在 Ubuntu 24.04.5、`CompilerforFHE` Conda 环境中实测：3 项 CTest 和 34 项完整 Python 测试全部通过，完整测试无跳过；按模块复跑也全部通过。执行过程、实际命令、耗时、精度和原始日志见 [本机测试报告](docs/VALIDATION-2026-11-16.md)，本轮 XML 和指标保存在 `docs/validation/2026-11-16-conda/`。未安装 front Python 包时，本轮通过 `export PYTHONPATH="$PWD/front${PYTHONPATH:+:$PYTHONPATH}"` 加载仓库源码。历史 Windows XML 仍在 `docs/native-validation-junit.xml` 与 `docs/validation-junit.xml`；默认安全参数的 ReLU 仍为历史功能测量，本轮 OpenFHE 回归使用 TOY 参数。
+
+新增优化版本包含 **6 项原生 CTest 和 59 项 Python 测试**；开发与验证结果见 [优化开发报告](docs/development/RESULTS.md)，AI 后端设计和离线任务导出见 [AI 后端方案](docs/development/AI_BACKEND.md)。
+
+加入 CPU SIMD/对角线 MatVec 后，最新完整验证为 **7 项 CTest 和 87 项 Python 测试全部通过**，含 16 次新增加密执行。算法、命令、资源/精度对比与日志见 [MatVec 报告](docs/development/MATVEC.md)。
 
 可从完成的运行中收集精度、转换次数、各阶段延迟和评估键大小：
 
@@ -335,7 +356,7 @@ python scripts/package_source.py --output CrossFHE-source.zip
 
 | 现象 | 检查和处理 |
 | --- | --- |
-| `cmake` 版本低于 3.24 | 激活 `.venv`，用 `command -v cmake` 确认使用 requirements 安装的工具 |
+| `cmake` 版本低于 3.24 | 执行 `conda activate CompilerforFHE`，用 `command -v cmake` 确认使用该环境安装的工具 |
 | LLVM 源码检查失败 | 确认存在 `third_party/llvm-project/mlir/include/mlir/IR/OpBase.td`，或指定同一快照的 `--llvm-source` |
 | `dependency revision mismatch` | 使用独立、匹配固定 revision 的依赖 checkout；不要在有自己改动的依赖目录上强制覆盖 |
 | 编译过程中被系统终止 | 降低 `--jobs`，先构建编译器小目标，再检查内存/交换空间 |
@@ -348,10 +369,10 @@ python scripts/package_source.py --output CrossFHE-source.zip
 
 ## 当前能力与研究入口
 
-这是静态、公开模型参数、秘密输入的推理基线。一个 tensor 元素对应一个密文，循环展开；尚无 tensor packing、自动方案选择、通用训练或完整 BERT。
+这是静态、公开模型参数、秘密输入的推理编译器。默认路径仍逐元素展开、每个元素对应一个密文；显式 `--packing diagonal|bsgs|auto` 支持 SEAL CPU 上单个公开仿射 MatVec 的周期槽位打包。通用网络布局搜索、自动方案选择、通用训练和完整 BERT 尚未实现。
 
 OpenFHE 后端的 Logic FHE 当前是 **FHEW sign bootstrapping**，支持比较、ReLU、Where、Min/Max、MaxPool。它不是 TFHEpp，也不是任意实数 LUT。Softmax、GELU、Sigmoid、LayerNorm 等不支持的算子会报错。比较受量化、CKKS 误差、数值范围和 margin 条件约束，详见 [docs/BACKENDS.md](docs/BACKENDS.md)。
 
-后续优化应加入 `compiler/Pipelines/FHE/OptimizationHooks.cpp`，必要时扩展 `compiler/Conversion/FHE` 和方言。新增库适配放入 `backend/`；FHE IR 到后端代码的生成仍归 `compiler/CodeGen/FHE`。GPU 路线留待后续实现。
+默认优化组合在 `compiler/Pipelines/FHE/OptimizationHooks.cpp` 中编排；专项实现位于同目录的 `Optimizations.cpp`、`ApproximateRelu.cpp`。后续根据 [开发计划](docs/development/PLAN.md) 扩展 `compiler/Conversion/FHE` 和方言。新增库适配放入 `backend/`；FHE IR 到后端代码的生成仍归 `compiler/CodeGen/FHE`。GPU 路线留待后续实现。
 
 开发指南：[新建方言](docs/ADDING_DIALECT.md)、[新增 pass](docs/ADDING_PASS.md)。模块细节：[编译器](compiler/README.md)、[命令入口](tools/README.md)、[前端](front/README.md)、[后端](backend/README.md)、[测试](tests/README.md)。方言和许可证来源见 [docs/UPSTREAM.md](docs/UPSTREAM.md)，重构前后路径对照见 [docs/MIGRATION.md](docs/MIGRATION.md)。

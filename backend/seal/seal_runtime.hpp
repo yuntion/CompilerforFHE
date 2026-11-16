@@ -11,15 +11,50 @@ using Cipher = seal::Ciphertext;
 struct Counts {
   std::uint64_t add = 0, sub = 0, multiply_plain = 0, multiply_cipher = 0;
   std::uint64_t rescale = 0, mod_switch = 0, relinearize = 0;
+  std::uint64_t rotations = 0, add_plain = 0, materializations = 0;
 };
 
 class SealRuntime {
  public:
   SealRuntime(const seal::SEALContext &context, const seal::PublicKey &key,
-              const seal::RelinKeys &relin, double scale)
+              const seal::RelinKeys &relin, double scale,
+              const seal::GaloisKeys *galois = nullptr)
       : context_(context), encoder_(context), evaluator_(context),
-        encryptor_(context, key), relin_(relin), scale_(scale) {}
+        encryptor_(context, key), relin_(relin), scale_(scale), galois_(galois) {}
   Counts counts;
+
+  seal::Ciphertext rotate(const seal::Ciphertext &a, int step) {
+    if (!galois_) throw std::runtime_error("missing packed rotation keys");
+    seal::Ciphertext output;
+    evaluator_.rotate_vector(a, step, *galois_, output);
+    ++counts.rotations;
+    return output;
+  }
+  seal::Ciphertext zero_like(const seal::Ciphertext &a) {
+    seal::Ciphertext output;
+    encryptor_.encrypt_zero(a.parms_id(), output);
+    output.scale() = a.scale();
+    ++counts.materializations;
+    return output;
+  }
+  seal::Ciphertext mul_periodic(const seal::Ciphertext &a, const std::vector<double> &values) {
+    auto expanded = expand(values);
+    if (std::all_of(values.begin(),values.end(),[](double v) { return v==0; }))
+      throw std::runtime_error("zero packed product must be materialized explicitly");
+    seal::Plaintext plain; seal::Ciphertext output;
+    encoder_.encode(expanded,a.parms_id(),scale_,plain);
+    evaluator_.multiply_plain(a,plain,output);
+    ++counts.multiply_plain;
+    refreshScale(output);
+    return output;
+  }
+  seal::Ciphertext add_periodic(const seal::Ciphertext &a, const std::vector<double> &values) {
+    seal::Plaintext plain; seal::Ciphertext output;
+    encoder_.encode(expand(values),a.parms_id(),a.scale(),plain);
+    evaluator_.add_plain(a,plain,output);
+    ++counts.add_plain;
+    return output;
+  }
 
   seal::Ciphertext constant(double value) {
     seal::Plaintext plaintext;
@@ -95,6 +130,16 @@ class SealRuntime {
   seal::Encryptor encryptor_;
   const seal::RelinKeys &relin_;
   double scale_;
+  const seal::GaloisKeys *galois_;
+  std::vector<double> expand(const std::vector<double> &values) {
+    if (values.empty() || encoder_.slot_count()%values.size())
+      throw std::runtime_error("packed period must divide physical slot count");
+    for (double value : values)
+      if (!std::isfinite(value)) throw std::runtime_error("nonfinite packed coefficient");
+    std::vector<double> output(encoder_.slot_count());
+    for (std::size_t i=0; i<output.size(); ++i) output[i]=values[i%values.size()];
+    return output;
+  }
   std::pair<seal::Ciphertext, seal::Ciphertext> align(
       const seal::Ciphertext &a, const seal::Ciphertext &b) {
     auto left = context_.get_context_data(a.parms_id());

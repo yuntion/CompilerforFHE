@@ -9,7 +9,7 @@ mlir_tablegen(include/heir/IR/FHE/HEIR.h.inc -gen-op-decls)
 mlir_tablegen(include/heir/IR/FHE/HEIR.cpp.inc -gen-op-defs)
 add_public_tablegen_target(CrossFHEHEIRIncGen)
 
-add_library(CrossFHEHEIR HEIRDialect.cpp)
+add_library(CrossFHEHEIR HEIRDialect.cpp PackedOps.cpp)
 add_dependencies(CrossFHEHEIR CrossFHEHEIRIncGen)
 target_include_directories(CrossFHEHEIR PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include" "${CMAKE_CURRENT_BINARY_DIR}/include")

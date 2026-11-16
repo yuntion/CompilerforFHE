@@ -109,6 +109,10 @@ struct LowerToHEIR : PassWrapper<LowerToHEIR, OperationPass<ModuleOp>> {
     replacement->setAttr("ppml.layout",builder.getStringAttr("one-scalar-per-ciphertext"));
     replacement->setAttr("ppml.arithmetic_scheme",builder.getStringAttr("ckks"));
     replacement->setAttr("ppml.logic_scheme",builder.getStringAttr("fhew-sign"));
+    for (auto attr : function->getAttrs())
+      if (attr.getName().strref().starts_with("ppml.relu_") ||
+          attr.getName().strref()=="ppml.fhe_enabled")
+        replacement->setAttr(attr.getName(),attr.getValue());
     function.erase();
   }
 };
