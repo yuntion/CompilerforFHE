@@ -389,14 +389,6 @@ python scripts/run_tests.py --suite all       # 全部 CPU/GPU 测试
 
 筛选示例为 `python scripts/run_tests.py --suite cpu -- -k affine`；筛选只影响 Python 用例，CTest 仍完整执行。自定义配置、构建并发、报告目录、直接 pytest / CTest 和完整参数规则见 [测试说明](tests/README.md)。直接 pytest / CTest 不会更新二进制，需先自行构建。
 
-### 已完成的验证
-
-2026-11-17 精简后执行完整 `--suite all`：**235 项 Python 测试、7 项 CTest 全部通过，零失败、零跳过**，覆盖 SEAL、OpenFHE 和 Phantom CPU/GPU 路径。此次保留 legacy 与 AI 后端，清理范围、保留理由与报告位置见 [清理执行记录](CLEANUP_CANDIDATES.md#11-本次执行记录2026-11-17)。
-
-清理前的 **2026-11-17 AI 后端首版验证**覆盖 **255 项独立 Python 测试、7 项 CTest 全部通过，零失败、零跳过**。先执行 246 项的完整 `--suite all`，随后对最终新增/修改内容执行定向检查与 quick，按测试身份去重后覆盖最终 255 项；未再次运行最终 255 项的单次 all。命令、结果及本机报告位置见 [AI 首版验证记录](docs/development/AI_BACKEND_VALIDATION.md)。
-
-此前的 [Phantom 与 MatVec 验证](docs/VALIDATION-2026-11-17.md) 记录了原有 100 项 Python 测试、58 次加密执行及 Phantom 客户端解码修复。测试基础设施元测试已移除，AI 后端测试位于 `tests/backend/ai/`；历史通过数不代表当前用例总数。OpenFHE 回归使用显式 TOY 参数，默认安全参数的 ReLU 为单独功能测量。基线、优化和 MatVec 的历史结果分别见 [初始验证](docs/VALIDATION.md)、[本机基线报告](docs/VALIDATION-2026-11-16.md)、[优化报告](docs/development/RESULTS.md) 和 [MatVec 报告](docs/development/MATVEC.md)。
-
 可从完成的运行中收集精度、转换次数、各阶段延迟和评估键大小：
 
 ```bash
