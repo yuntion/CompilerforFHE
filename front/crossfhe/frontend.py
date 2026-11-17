@@ -387,15 +387,19 @@ class Importer:
         mlir += "\n".join(self.lines)+"\n    return "+", ".join(returns)+" : "+types+"\n  }\n}\n"
         return mlir, {"inputs":self.input_info,"outputs":self.output_info,
                       "scalar_operations":self.counter,"logic_comparisons":self.logic_count,
-                      "numeric_semantics":"float32 model coefficients promoted to CKKS f64",
-                      "model_parameters":"public", "layout":"one-scalar-per-ciphertext"}
+                      "numeric_semantics":"floating-point model coefficients promoted to f64",
+                      "model_parameters":"public"}
 
 
-def import_onnx(path: str | Path, *, max_operations=50000, max_elements=50000):
+def load_onnx(path: str | Path):
+    """Load the common ONNX boundary for scalar and affine importers."""
     model = onnx.load(str(path), load_external_data=True)
     onnx.checker.check_model(model)
     versions = {o.domain:o.version for o in model.opset_import}
     if not 13 <= versions.get("",versions.get("ai.onnx",0)) <= 21:
         raise FrontendError("supported ONNX opsets are 13..21")
-    model = onnx.shape_inference.infer_shapes(model, strict_mode=True)
-    return Importer(model,max_operations,max_elements).run()
+    return onnx.shape_inference.infer_shapes(model, strict_mode=True)
+
+
+def import_onnx(path: str | Path, *, max_operations=50000, max_elements=50000):
+    return Importer(load_onnx(path),max_operations,max_elements).run()

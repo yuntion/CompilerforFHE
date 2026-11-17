@@ -8,7 +8,7 @@ from onnx import helper as h, numpy_helper as n, TensorProto as T
 import pytest
 
 from crossfhe.frontend import FrontendError
-from crossfhe.packed import import_packed_onnx
+from backend.packed import import_packed_onnx
 from crossfhe.pipeline import command, compile_onnx
 
 

@@ -2,6 +2,8 @@
 
 日期：2026-11-16（Asia/Shanghai）。本轮完成 [开发计划](PLAN.md) 的 P0—P6：新增 6 个可独立调用的专用 pass、默认优化组合、原生资源 JSON 导出、Python/CLI 选择与 manifest 契约更新，以及 AI 后端离线任务准备器。没有将尚不具备执行接口的 packing、GPU 和 scale/bootstrap 联合优化标记为已实现。
 
+源码入口按当前结构注明：模型接入为 `front/crossfhe`，CLI 与编译编排为 `front/crossfhe`，后端执行工具为 `backend/execution.py` 和 `backend/toolchain.py`；AI 实现为 `backend/ai/`（Python 包 `backend.ai`），函数映射资产位于 `backend/api/`。下文历史执行命令与验证结果保持原样；当前 AI 功能见 [AI_BACKEND.md](AI_BACKEND.md)。
+
 ## 实现和文献依据
 
 阅读 `articles/开题报告表.doc` 的研究方案和答辩意见；253 篇 PDF 已分类索引，重点阅读 Compiler 类及与输入范围/多项式近似直接相关的文章。逐页精读范围与实现对应关系见 [ARTICLES.md](ARTICLES.md)，并非声称完整精读所有 PDF。
@@ -13,8 +15,8 @@
 | `compiler/Pipelines/FHE/OptimizationHooks.cpp` | 默认组合简化/CSE/DCE/契约刷新，不默认重关联或近似 |
 | `compiler/Conversion/FHE/` | 在正常 FHE 路径携带函数启用标记与近似元数据 |
 | `tools/crossfhe-translate.cpp` | 从经过 codegen 合法性检查的 typed IR 导出资源契约；拒绝非法资源计数属性 |
-| `front/crossfhe/pipeline.py`、`cli.py` | `none/scalar/depth`、ReLU 参数、前后资源 JSON、实际比较数/深度、IR 与契约 hash |
-| `scripts/prepare_ai_backend.py` | 导出公开任务上下文，输出未验证状态；不调用模型或执行候选 |
+| `front/crossfhe/pipeline.py`、`cli.py`，`backend/execution.py`（当前路径） | `none/scalar/depth`、ReLU 参数、前后资源 JSON、实际比较数/深度、IR 与契约 hash |
+| `backend/ai/task.py`（当前路径） | 导出公开任务上下文，输出未验证状态；通过 `python -m crossfhe ai prepare` 调用 |
 
 详细 pass 语义、数值前提与调用方式见 [PASSES.md](PASSES.md)。FHE 变换不依赖通用 canonicalize/cse pass，不对 `heir.materialize` 做 CSE，未知操作不会被当作无副作用操作删除。
 
@@ -25,7 +27,7 @@
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh
 conda activate CompilerforFHE
-export PYTHONPATH="$PWD/front"
+export PYTHONPATH="$PWD:$PWD/front"
 
 cmake --build build --target crossfhe-opt crossfhe-translate --parallel 8
 python -m pytest tests/compiler/test_optimizations.py -q --basetemp .crossfhe/test-new-passes
@@ -42,7 +44,7 @@ ctest --test-dir build --output-on-failure --output-junit "$PWD/docs/development
 python -m pytest tests/compiler -q --basetemp .crossfhe/test-final-contract
 
 python scripts/collect_reports.py .crossfhe/test-optimized-all --output docs/development/validation/measurements
-python scripts/prepare_ai_backend.py .crossfhe/test-optimized-all/test_approximate_relu_runs_on_0/relu --output .crossfhe/ai-backend-verified-input
+python -m crossfhe ai prepare .crossfhe/test-optimized-all/test_approximate_relu_runs_on_0/relu --output .crossfhe/ai-backend-verified-input
 ```
 
 开发中第一次 A/B 输入使用重复 PyTorch 表达式，但导出器提前合并了它们，两个资源削减断言未成立。随后改为显式保留重复节点的 ONNX，并保留独立 PyTorch 数值参考。另修正了新增 compiler/e2e 测试文件同名导致的 pytest 收集冲突。最终完整回归结果如下，未放宽现有回归断言或原有精度容差。

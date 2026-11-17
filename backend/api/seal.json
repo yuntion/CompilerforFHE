@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "backend": "seal-ckks",
+  "library": "seal",
+  "library_version": "4.1.2",
+  "library_revision": "119dc32e135cb89c1062076a69310d4413ebc824",
+  "runtime_header": "backend/seal/seal_runtime.hpp",
+  "runtime_sha256": "03d425ced775039966fdd0a4c85ee1026d084fff114d7f738e7741f68d4c72eb",
+  "mappings": [
+    {
+      "operation": "public_constant",
+      "ir_ops": [
+        "arith.constant"
+      ],
+      "runtime": "<none: codegen emits const double>",
+      "library_calls": [],
+      "description": "有限公开 f64 由代码生成器写成 C++ 常量，不调用密码库。",
+      "constraints": [
+        "这不是密文；需要密文常量时必须使用 heir.materialize -> constant。",
+        "不能把公开常量生成解释为明文回退执行。"
+      ]
+    },
+    {
+      "operation": "constant",
+      "ir_ops": [
+        "heir.materialize"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::constant(double value)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Encryptor::encrypt"
+      ],
+      "description": "在初始参数层按 runtime scale 编码公开标量，并用公钥生成新密文。",
+      "constraints": [
+        "只接受编译器已验证的有限公开常量；不处理秘密明文。",
+        "随机化物化操作；不能删除或跨越其效果约束。"
+      ]
+    },
+    {
+      "operation": "add_cipher_cipher",
+      "ir_ops": [
+        "heir.rlweadd",
+        "heir.packed_add"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::add(const seal::Ciphertext &a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::Evaluator::add"
+      ],
+      "description": "先经 align 复制并对齐层级/scale，再生成加法结果；支持标量和周期打包密文。",
+      "constraints": [
+        "两个输入保留；需要同一 SEAL 参数上下文。",
+        "align 的复制和 mod-switch 不是免费操作，见 align 映射。"
+      ]
+    },
+    {
+      "operation": "add_cipher_plain",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::add(const seal::Ciphertext &a, double b)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::add_plain"
+      ],
+      "description": "在 a.parms_id() 和 a.scale() 编码公开标量，再执行密明加法。",
+      "constraints": [
+        "公开 b 必须有限；不消耗一次显式 rescale。"
+      ]
+    },
+    {
+      "operation": "add_plain_cipher",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::add(double a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::add_plain"
+      ],
+      "description": "转发 add(b,a)，使用密明加法重载。",
+      "constraints": [
+        "只交换加法的公开/密文参数位置，不更改计算图。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::sub(const seal::Ciphertext &a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::Evaluator::sub",
+        "seal::Encryptor::encrypt_zero"
+      ],
+      "description": "先 align；通常执行密文减法。当 a.data()==b.data() 时，改为在目标层公钥加密零，以避免透明密文。",
+      "constraints": [
+        "同一密文自减包含随机物化效果，不能当作普通纯算术重排。",
+        "两个输入保留；零结果仍为密文。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_plain",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::sub(const seal::Ciphertext &a, double b)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::add_plain"
+      ],
+      "description": "转发 add(a,-b)，保持 a-b 的参数顺序。",
+      "constraints": [
+        "公开 b 必须有限；不能把减法当作可交换操作。"
+      ]
+    },
+    {
+      "operation": "sub_plain_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::sub(double a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::Evaluator::negate",
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::add_plain"
+      ],
+      "description": "先生成 -b，再转发 add(-b,a)，实现公开标量减密文。",
+      "constraints": [
+        "公开 a 必须有限；不能替换为 sub(b,a)。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::mul(const seal::Ciphertext &a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::Evaluator::multiply",
+        "seal::Evaluator::relinearize_inplace"
+      ],
+      "description": "先 align，密文乘法后使用重线性化密钥，再调用 refreshScale 执行一次 rescale。",
+      "constraints": [
+        "需要重线性化密钥及剩余模数层。",
+        "重线性化和 rescale 是此适配器的固定语义，调度候选不能省略。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_plain",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::mul(const seal::Ciphertext &a, double b)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::multiply_plain",
+        "seal::Encryptor::encrypt_zero"
+      ],
+      "description": "非零公开 b 在 a 的层、runtime scale 编码并密明相乘；b==0 时公钥加密零并设置乘积 scale；两条路径都调用 refreshScale。",
+      "constraints": [
+        "运行时拒绝非有限 b。",
+        "零乘法包含随机物化，且仍消耗一次 rescale；不能改为透明零或跳过层维护。"
+      ]
+    },
+    {
+      "operation": "mul_plain_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::mul(double a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::multiply_plain",
+        "seal::Encryptor::encrypt_zero"
+      ],
+      "description": "转发 mul(b,a)，沿用密明乘法及零值特殊路径。",
+      "constraints": [
+        "公开 a 必须有限；仍保留重载内的 rescale。"
+      ]
+    },
+    {
+      "operation": "rotate",
+      "ir_ops": [
+        "heir.packed_rotate"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::rotate(const seal::Ciphertext &a, int step)",
+      "library_calls": [
+        "seal::Evaluator::rotate_vector"
+      ],
+      "description": "使用原 IR 的 step 和 Galois 密钥对 CKKS 槽进行旋转，返回新密文。",
+      "constraints": [
+        "必须提供对应 rotation_steps 的 Galois 密钥。",
+        "当前打包接口使用 periodic 布局；不能更改 step、逻辑周期或补齐约定。"
+      ]
+    },
+    {
+      "operation": "zero_like",
+      "ir_ops": [
+        "heir.packed_zero"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::zero_like(const seal::Ciphertext &a)",
+      "library_calls": [
+        "seal::Encryptor::encrypt_zero"
+      ],
+      "description": "在 a.parms_id() 公钥加密零，并将结果 scale 设为 a.scale()。",
+      "constraints": [
+        "随机物化操作；输入用于继承参数层与 scale。",
+        "不调用 rescale；不得返回可被 SEAL 拒绝的透明密文。"
+      ]
+    },
+    {
+      "operation": "mul_periodic",
+      "ir_ops": [
+        "heir.packed_mul_plain"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::mul_periodic(const seal::Ciphertext &a, const std::vector<double> &values)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::multiply_plain"
+      ],
+      "description": "expand 将公开系数周期重复到物理槽；在 a 的层、runtime scale 编码，相乘后调用 refreshScale。",
+      "constraints": [
+        "公开周期非空且整除物理槽数，全部系数有限。",
+        "全零系数向量明确拒绝；必须由编译器用 heir.packed_zero 表示。"
+      ]
+    },
+    {
+      "operation": "add_periodic",
+      "ir_ops": [
+        "heir.packed_add_plain"
+      ],
+      "runtime": "seal::Ciphertext crossfhe::SealRuntime::add_periodic(const seal::Ciphertext &a, const std::vector<double> &values)",
+      "library_calls": [
+        "seal::CKKSEncoder::encode",
+        "seal::Evaluator::add_plain"
+      ],
+      "description": "expand 周期系数后，在 a.parms_id()/a.scale() 编码并执行密明加法。",
+      "constraints": [
+        "公开周期非空且整除物理槽数，全部系数有限。",
+        "不执行 rescale；布局和输出顺序由编译器冻结。"
+      ]
+    },
+    {
+      "operation": "align",
+      "ir_ops": [],
+      "runtime": "std::pair<seal::Ciphertext, seal::Ciphertext> crossfhe::SealRuntime::align(const seal::Ciphertext &a, const seal::Ciphertext &b)",
+      "library_calls": [
+        "seal::SEALContext::get_context_data",
+        "seal::Evaluator::mod_switch_to_inplace"
+      ],
+      "description": "私有辅助路径：复制两个输入，将较高 chain_index 的副本降至另一输入层；检查 log2(scale) 差不超过 0.01，再将副本 scale 归一到 runtime scale。",
+      "constraints": [
+        "仅由加减/密文乘法内部调用；候选不能直接访问私有 helper。",
+        "SEAL 的 chain_index 随降层减小；不能套用 Phantom 的索引方向。",
+        "scale 检查与参数上下文检查不可省略；不会修改原输入。"
+      ]
+    },
+    {
+      "operation": "refresh_scale",
+      "ir_ops": [],
+      "runtime": "void crossfhe::SealRuntime::refreshScale(seal::Ciphertext &value)",
+      "library_calls": [
+        "seal::SEALContext::get_context_data",
+        "seal::Evaluator::rescale_to_next_inplace"
+      ],
+      "description": "私有辅助路径：确认存在下一参数层，原地 rescale 一次，再将 value.scale() 设为 runtime scale。",
+      "constraints": [
+        "模数链耗尽时报错。",
+        "私有维护操作，不是可单独由 AI 重新规划的公开 API。"
+      ]
+    },
+    {
+      "operation": "expand",
+      "ir_ops": [],
+      "runtime": "std::vector<double> crossfhe::SealRuntime::expand(const std::vector<double> &values)",
+      "library_calls": [
+        "seal::CKKSEncoder::slot_count"
+      ],
+      "description": "私有公开数据布局辅助：检查周期与有限值，再按 i % period 复制到全部物理槽。",
+      "constraints": [
+        "不处理秘密明文，不执行同态计算。",
+        "不能把周期重复改为单次补零；这会改变跨周期旋转语义。"
+      ]
+    }
+  ],
+  "codegen_source": "compiler/CodeGen/FHE/CodeGen.cpp",
+  "provenance": "逐条核对本项目 codegen/runtime 与固定 revision 的上游头文件；描述当前已实现的适配路径，不是库的完整能力清单。"
+}

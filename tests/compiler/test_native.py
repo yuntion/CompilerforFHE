@@ -61,7 +61,7 @@ def test_incomplete_artifact_cannot_run(tmp_path,config):
 @pytest.mark.native
 def test_phantom_requires_optional_configuration(tmp_path,config):
     cpu_config = {k:v for k,v in config.items() if not k.startswith("phantom_")}
-    with pytest.raises(ValueError,match="bootstrap.py --with-phantom"):
+    with pytest.raises(ValueError,match="bootstrap.py --enable-cuda"):
         compile_onnx("unused.onnx",tmp_path/"model",config=cpu_config,backend="phantom-ckks")
 
 

@@ -1,6 +1,6 @@
 # 测试编写与生成约束
 
-本文约束本项目新增或修改的测试，包括人工编写、AI 生成和脚本生成的用例。生成测试前须遵循本文；运行方式见 [测试说明](tests/README.md)，现有流程及边界见 [修复方案](TESTING_REPAIR_PLAN.md)。本文是编写规则；标记、依赖检查和运行结果判断由现有 pytest 配置与测试入口执行，其余要求通过代码审查和实际验证落实。
+本文约束本项目新增或修改的测试，包括人工编写、AI 生成和脚本生成的用例。生成测试前须遵循本文；运行方式与测试范围见 [测试说明](../tests/README.md)。本文是编写规则；标记、依赖检查和运行结果判断由现有 pytest 配置与测试入口执行，其余要求通过代码审查和实际验证落实。
 
 ## 1. 先确定验证目标，再生成代码
 
@@ -16,17 +16,19 @@
 
 | 位置 | 生成内容 | 不应承担的职责 |
 | --- | --- | --- |
-| `tests/front/` | ONNX 算子、类型、形状、公开参数及拒绝诊断 | 原生构建和真实加密 |
+| `tests/front/` | ONNX 算子、类型、形状、公开参数、仿射结构解析及拒绝诊断 | 原生构建和真实加密 |
 | `tests/compiler/` | 方言、pass、资源契约、代码生成及编译器接口的正反例 | 没有声明依赖的密码库执行 |
 | `tests/compiler/inputs/` | 小型、可读、可复用的 MLIR fixture | 模型 runner、密钥或运行报告 |
-| `tests/backend/` | 后端运行时接口、密文边界与复合计算 | 用模拟结果替代密码库行为 |
+| `tests/backend/` | 后端布局与执行工具、运行时接口、密文边界与复合计算 | 用模拟结果替代密码库行为 |
 | `tests/e2e/` | 模型编译、真实加密执行、精度和资源契约 | 把只生成代码报告为加密成功 |
-| `tests/scripts/` | 测试入口、依赖诊断、用例筛选、构建阻断和报告契约 | 要求真实密码库或 GPU 才能验证脚本逻辑 |
+| `tests/backend/ai/` | 文档检索、候选协议、provider 和验证错误处理 | 用纯 Python 测试代替真实编译或加密验证 |
 | `tests/CMakeLists.txt` | 小型、快速的原生 CTest 检查 | 重复编排全部 Python / 加密测试 |
 
 Python 测试采用 pytest，文件命名为 `test_*.py`，用例命名为 `test_<行为或条件>_<预期结果>`，或沿用同文件中同样清晰的命名。原生工具检查复用 CTest。不得另建一套测试框架、批处理入口或独立的全量测试脚本；统一编排由 `scripts/run_tests.py` 承担。
 
-不要把新测试放入旧示例 `tests/test.py`、`tests/tosa-mlir/`、`tests/gpu-module/`，也不要为本项目测试修改 `third_party/` 上游用例。新增测试目录、标记或套件时，必须同步 `pyproject.toml`、测试入口和使用说明，确认实际能够收集到。
+模型接入测试直接导入 `crossfhe.frontend`、`crossfhe.affine` 或 `crossfhe.exporter`；编译集成使用 `crossfhe.pipeline`；后端工具、布局与 AI 测试直接导入 `backend` 对应模块，避免前端测试依赖后端编排。
+
+不要为本项目测试修改 `third_party/` 上游用例。新增测试目录、标记或套件时，必须同步 `pyproject.toml`、测试入口和使用说明，确认实际能够收集到。
 
 ## 3. 按真实依赖标注测试
 
@@ -49,9 +51,8 @@ Python 测试采用 pytest，文件命名为 `test_*.py`，用例命名为 `test
 
 - 工具链复用 `tests/conftest.py` 的 session `config` fixture，公共检查复用 `scripts/test_support.py`。不得为新文件复制一份读取 `.crossfhe/toolchain.json`、搜索编译器或检查后端的代码。
 - 缺少必需依赖由筛选后的统一检查报错。不得使用 `pytest.skip`、`pytest.importorskip`、`try/except: return` 或捕获错误后改为通过，来掩盖所选用例缺失的工具链。
-- `tests/scripts/` 为验证“跳过是否导致入口失败”等行为，可以在隔离的临时测试项目中构造 skip / fail；这些是受测输入，不能让外层回归用例无条件通过。
 - 测试不得自动安装包、联网下载依赖、运行 bootstrap、切换 Conda、改写真实工具链配置或修改上游 checkout。首次准备由调用者完成，增量构建由统一入口完成。
-- 工具位置从配置取得，不硬编码开发机路径、Conda 环境路径或 GPU 编号。调用原生工具时处理平台可执行文件后缀，复用 `crossfhe.pipeline.command`；脚本测试可直接使用标准库 subprocess 验证退出码与输出。
+- 工具位置从配置取得，不硬编码开发机路径、Conda 环境路径或 GPU 编号。调用原生工具时处理平台可执行文件后缀，复用 `backend.toolchain.command`。
 
 ## 5. 断言必须验证真实行为
 
@@ -91,7 +92,7 @@ import os
 from pathlib import Path
 
 import pytest
-from crossfhe.pipeline import command
+from backend.toolchain import command
 
 
 @pytest.mark.native
@@ -117,7 +118,8 @@ def test_undefined_mlir_value_is_rejected(tmp_path, config):
 | 方言、pass、原生诊断 | `python scripts/run_tests.py --suite compiler`，必要时增加受影响后端的加密用例 |
 | SEAL / OpenFHE 运行时、生成代码或加密链路 | `python scripts/run_tests.py --suite cpu -- -k '<受影响用例>'`，影响广泛时运行完整 CPU 套件 |
 | Phantom 运行时、CUDA 生成代码 | `python scripts/run_tests.py --suite gpu` |
-| 测试入口、依赖检查、标记选择和报告 | `python scripts/run_tests.py --suite scripts`；同时改动真实用例调度时验证受影响套件 |
+| AI 后端纯 Python 模块 | `python -m pytest tests/backend/ai -q` |
+| 测试入口、依赖检查、标记选择和报告 | 检查命令行帮助，并运行受影响套件确认筛选、退出码与报告 |
 
 `--collect-only` 仅用于直接 pytest 检查收集，不能作为用例已通过的证据。直接 pytest / CTest 不触发构建；修改原生实现后使用统一入口更新程序，不能用旧二进制证明新实现正确。
 

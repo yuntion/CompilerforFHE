@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "backend": "phantom-ckks",
+  "library": "phantom",
+  "library_version": "2.1",
+  "library_revision": "1f4a198443b3af77118e51f53d5b8f332154b875",
+  "runtime_header": "backend/phantom/phantom_runtime.hpp",
+  "runtime_sha256": "96cd7ee2f4299b876f8502dcd58fcb8380e3bedc2780b53c7d69b2c3155d268c",
+  "mappings": [
+    {
+      "operation": "public_constant",
+      "ir_ops": [
+        "arith.constant"
+      ],
+      "runtime": "<none: codegen emits const double>",
+      "library_calls": [],
+      "description": "有限公开 f64 由代码生成器写成 C++ 常量，不调用密码库。",
+      "constraints": [
+        "这不是密文；需要密文常量时必须使用 heir.materialize -> constant。",
+        "不能把公开常量生成解释为明文回退执行。"
+      ]
+    },
+    {
+      "operation": "constant",
+      "ir_ops": [
+        "heir.materialize"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::constant(double value)",
+      "library_calls": [
+        "PhantomContext::get_first_index",
+        "PhantomPublicKey::encrypt_asymmetric"
+      ],
+      "description": "通过私有 encode 在初始 chain index、固定 scale=2^40 编码公开标量，再用公钥加密。",
+      "constraints": [
+        "encode 会检查有限公开值并周期扩展到物理槽。",
+        "随机物化操作；不调用客户端解密。"
+      ]
+    },
+    {
+      "operation": "add_cipher_cipher",
+      "ir_ops": [
+        "heir.rlweadd",
+        "heir.packed_add"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::add(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::add"
+      ],
+      "description": "先经 align 复制并对齐两个输入，返回 CUDA CKKS 加法结果。",
+      "constraints": [
+        "输入须为当前参数下 size=2 的 NTT 密文、scale 约为 2^40。",
+        "适用于标量及 periodic 打包布局；输入不被原地修改。"
+      ]
+    },
+    {
+      "operation": "add_cipher_plain",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::add(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "phantom::add_plain"
+      ],
+      "description": "validate(a) 后，用私有 encode 在 a 的 level/scale 编码公开 b，再密明相加。",
+      "constraints": [
+        "公开 b 必须有限；保留全部物理槽重复的标量语义。",
+        "不执行 rescale。"
+      ]
+    },
+    {
+      "operation": "add_plain_cipher",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::add(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::add_plain"
+      ],
+      "description": "转发 add(b,a)，沿用输入验证和公开编码。",
+      "constraints": [
+        "不能据此修改原图常量或布局。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::sub(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::sub"
+      ],
+      "description": "先 align；通常执行 phantom::sub；当 a.data()==b.data() 时转为 zero_like(a) 的公钥零物化路径。",
+      "constraints": [
+        "自减包含随机物化效果；不能生成透明零替代密文。",
+        "零值路径的库调用另见 zero_like 与 switch_to。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_plain",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::sub(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "phantom::add_plain"
+      ],
+      "description": "转发 add(a,-b)，实现密文减公开标量。",
+      "constraints": [
+        "公开 b 必须有限；减法参数顺序保持不变。"
+      ]
+    },
+    {
+      "operation": "sub_plain_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::sub(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::negate",
+        "phantom::add_plain"
+      ],
+      "description": "先 validate(b)，计算 phantom::negate(b)，再与公开 a 相加。",
+      "constraints": [
+        "不能替换为 sub(b,a)；公开 a 必须有限。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::mul(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::multiply_and_relin"
+      ],
+      "description": "先 align 并 requireNext，然后使用融合的 multiply_and_relin，最后调用 refreshScale。",
+      "constraints": [
+        "必须有 PhantomRelinKey 和剩余模数层。",
+        "融合乘法/重线性化与后续 rescale 是固定实现，不能省略或换成 CPU 计算。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_plain",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::mul(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "phantom::multiply_plain"
+      ],
+      "description": "转发 mul_periodic(a,{b})，包括公开编码、零值分支与 refreshScale。",
+      "constraints": [
+        "当 b==0 时改走 zero_like，再设置乘积 scale 并 rescale；不是透明零。",
+        "公开 b 必须有限；直接库调用与零值路径详见 mul_periodic。"
+      ]
+    },
+    {
+      "operation": "mul_plain_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::mul(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::multiply_plain"
+      ],
+      "description": "转发 mul(b,a)，再沿用 mul_periodic 的实现。",
+      "constraints": [
+        "结果为 GPU 密文；保持零值路径与层维护。"
+      ]
+    },
+    {
+      "operation": "rotate",
+      "ir_ops": [
+        "heir.packed_rotate"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::rotate(const crossfhe::Cipher &value, int step)",
+      "library_calls": [
+        "phantom::rotate"
+      ],
+      "description": "validate 输入后，使用固定 step 和 Galois 评估密钥执行 CKKS 槽旋转。",
+      "constraints": [
+        "必须加载原模型 rotation_steps 对应的 PhantomGaloisKey。",
+        "periodic 布局和 step 不可更改；当前 runtime 不向候选开放 stream 参数。"
+      ]
+    },
+    {
+      "operation": "zero_like",
+      "ir_ops": [
+        "heir.packed_zero"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::zero_like(const crossfhe::Cipher &value)",
+      "library_calls": [
+        "PhantomPublicKey::encrypt_zero_asymmetric"
+      ],
+      "description": "validate 后先在初始层公钥加密零，继承 value.scale()，再通过 switchTo 降至 value.chain_index()。",
+      "constraints": [
+        "固定版本的低层级直接公钥零加密曾失败，因此保留初始层加密再降层路径。",
+        "随机物化操作；不执行 rescale；相关降层 API 见 switch_to。"
+      ]
+    },
+    {
+      "operation": "mul_periodic",
+      "ir_ops": [
+        "heir.packed_mul_plain"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::mul_periodic(const crossfhe::Cipher &a, const std::vector<double> &weights)",
+      "library_calls": [
+        "phantom::multiply_plain"
+      ],
+      "description": "validate/requireNext 后周期扩展并编码权重；非全零时 multiply_plain，全零时 zero_like 并设置乘积 scale；最后统一 refreshScale。",
+      "constraints": [
+        "周期非空且整除物理槽数，系数必须有限。",
+        "编译器的全零 packed 乘法应降为 heir.packed_zero；标量 mul(a,0) 仍使用本函数内部零值路径。",
+        "编码、分配和层维护属于真实 evaluator 成本。"
+      ]
+    },
+    {
+      "operation": "add_periodic",
+      "ir_ops": [
+        "heir.packed_add_plain"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::PhantomRuntime::add_periodic(const crossfhe::Cipher &a, const std::vector<double> &bias)",
+      "library_calls": [
+        "phantom::add_plain"
+      ],
+      "description": "validate 后在 a 的 level/scale 周期扩展并编码 bias，执行 GPU 密明加法。",
+      "constraints": [
+        "周期非空且整除物理槽数；bias 全部有限。",
+        "不 rescale；不修改原布局或公开常量。"
+      ]
+    },
+    {
+      "operation": "encode",
+      "ir_ops": [],
+      "runtime": "PhantomPlaintext crossfhe::PhantomRuntime::encode(const std::vector<double> &values, double valueScale, std::size_t level)",
+      "library_calls": [
+        "PhantomCKKSEncoder::slot_count",
+        "PhantomCKKSEncoder::encode"
+      ],
+      "description": "私有公开编码辅助：检查有限系数及周期整除条件，重复到全部物理槽，再在指定 level/scale 编码。",
+      "constraints": [
+        "不能直接从 evaluator 访问私有 helper。",
+        "上游 CKKS encoder 使用 cudaStreamPerThread；本适配器没有独立 stream/event 参数。",
+        "只编码公开系数；不处理秘密明文。"
+      ]
+    },
+    {
+      "operation": "validate",
+      "ir_ops": [],
+      "runtime": "void crossfhe::PhantomRuntime::validate(const crossfhe::Cipher &value) const",
+      "library_calls": [
+        "PhantomContext::get_first_index",
+        "PhantomContext::total_parm_size",
+        "PhantomContext::get_context_data",
+        "PhantomCiphertext::chain_index",
+        "PhantomCiphertext::size",
+        "PhantomCiphertext::is_ntt_form",
+        "PhantomCiphertext::poly_modulus_degree",
+        "PhantomCiphertext::coeff_modulus_size",
+        "PhantomCiphertext::scale"
+      ],
+      "description": "私有参数检查：链索引有效，密文 size=2 且为 NTT 形式，degree/moduli 数与当前层匹配，scale 有限正数且 log2(scale) 距 40 不超过 0.01。",
+      "constraints": [
+        "这是结构/参数一致性检查，不是密码学安全证明或恶意网络输入验证器。",
+        "候选不得移除此检查。"
+      ]
+    },
+    {
+      "operation": "switch_to",
+      "ir_ops": [],
+      "runtime": "void crossfhe::PhantomRuntime::switchTo(crossfhe::Cipher &value, std::size_t level)",
+      "library_calls": [
+        "phantom::mod_switch_to_inplace"
+      ],
+      "description": "私有辅助：仅当当前 chain_index 与目标不同才原地 mod-switch，并记录计数。",
+      "constraints": [
+        "用于 align 的副本或新加密零结果；不是对原 evaluator 输入的任意原地修改。",
+        "Phantom chain_index 随降层增大，与 SEAL 相反。"
+      ]
+    },
+    {
+      "operation": "align",
+      "ir_ops": [],
+      "runtime": "std::pair<crossfhe::Cipher,crossfhe::Cipher> crossfhe::PhantomRuntime::align(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "phantom::mod_switch_to_inplace"
+      ],
+      "description": "私有辅助：validate 两输入并检查 scale 差，复制两者，通过 switchTo 降至 max(chain_index)，将副本 scale 设为 2^40。",
+      "constraints": [
+        "保留原输入；复制和降层可能产生显著设备内存/延迟成本。",
+        "log2(scale) 差不超过 0.01；不能跳过验证或套用 SEAL 的索引方向。"
+      ]
+    },
+    {
+      "operation": "require_next",
+      "ir_ops": [],
+      "runtime": "void crossfhe::PhantomRuntime::requireNext(const crossfhe::Cipher &value) const",
+      "library_calls": [
+        "PhantomContext::total_parm_size"
+      ],
+      "description": "私有乘法前置检查：确认 value.chain_index()+1 仍在模数链内。",
+      "constraints": [
+        "链耗尽时拒绝计算；不能通过忽略错误接受候选。"
+      ]
+    },
+    {
+      "operation": "refresh_scale",
+      "ir_ops": [],
+      "runtime": "void crossfhe::PhantomRuntime::refreshScale(crossfhe::Cipher &value)",
+      "library_calls": [
+        "phantom::rescale_to_next_inplace"
+      ],
+      "description": "私有维护操作：原地消耗一次模数层，然后把 scale 设置回 2^40。",
+      "constraints": [
+        "密文/密明乘法均保留此步骤；不允许 AI 自行删除、延迟或重新规划。"
+      ]
+    }
+  ],
+  "codegen_source": "compiler/CodeGen/FHE/CodeGen.cpp",
+  "provenance": "逐条核对本项目 codegen/runtime 与固定 revision 的上游头文件；描述当前已实现的适配路径，不是库的完整能力清单。"
+}

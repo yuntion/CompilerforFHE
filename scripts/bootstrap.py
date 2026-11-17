@@ -56,7 +56,7 @@ def main():
     for name in ("native-build", "openfhe-build", "openfhe-prefix", "phantom-build", "toolchain"):
         parser.add_argument(f"--{name}", type=Path)
     parser.add_argument("--jobs", type=int, default=4)
-    parser.add_argument("--with-phantom", action="store_true", help="also build the optional CUDA library")
+    parser.add_argument("--enable-cuda", action="store_true", help="also build the optional CUDA library")
     parser.add_argument("--cuda-compiler", type=Path, help="nvcc path; otherwise use PATH")
     parser.add_argument("--cuda-architectures", default="native", help="CMake CUDA architectures, e.g. 89")
     modes = parser.add_mutually_exclusive_group()
@@ -103,12 +103,12 @@ def main():
             "OPENFHEcore_static", "--parallel", args.jobs)
         run(cmake, "--install", openfhe_build)
 
-    cuda = tool(args.cuda_compiler or "nvcc") if args.with_phantom else None
-    if args.with_phantom and (sources["phantom"] / ".git").exists():
+    cuda = tool(args.cuda_compiler or "nvcc") if args.enable_cuda else None
+    if args.enable_cuda and (sources["phantom"] / ".git").exists():
         revision = git(sources["phantom"], "rev-parse", "HEAD")
         if revision != "1f4a198443b3af77118e51f53d5b8f332154b875":
             raise RuntimeError(f"unsupported Phantom revision: {revision}; use the pinned submodule")
-    if args.with_phantom and not args.skip_build:
+    if args.enable_cuda and not args.skip_build:
         run(cmake, "-S", sources["phantom"], "-B", phantom_build, "-G", "Ninja",
             "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_MAKE_PROGRAM={ninja}",
             f"-DCMAKE_CXX_COMPILER={cxx}", f"-DCMAKE_CUDA_COMPILER={cuda}",
@@ -128,7 +128,7 @@ def main():
     required = [native / "bin" / (name + suffix) for name in ("crossfhe-opt", "crossfhe-translate")]
     required += [Path(config["seal_dir"]) / "SEALConfig.cmake",
                  Path(config["openfhe_dir"]) / "OpenFHEConfig.cmake"]
-    if args.with_phantom:
+    if args.enable_cuda:
         libraries = [phantom_build / path for path in ("lib/libPhantom.so", "lib/libPhantom.dylib",
                      "bin/Phantom.dll", "lib/Phantom.dll", "Phantom.dll")]
         library = next((path for path in libraries if path.is_file()), libraries[0])

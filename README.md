@@ -1,6 +1,6 @@
 # CrossFHE Compiler
 
-CrossFHE 是基于 MLIR 的同态加密编译器。项目主干是 `compiler/`：它定义 FHE 方言，将公开算术程序降级为加密计算，并生成调用 FHE 库的 C++ evaluator。`front/` 负责 PyTorch/ONNX 接入，`backend/` 负责密码库适配和加密执行。
+CrossFHE 是基于 MLIR 的同态加密编译器。项目主干是 `compiler/`：它定义 FHE 方言，将公开算术程序降级为加密计算，并生成调用 FHE 库的 C++ evaluator。`front/` 负责 PyTorch/ONNX 模型接入、统一 CLI 和编译流程编排，`backend/` 负责密文布局、密码库适配、加密执行及 AI 候选生成与验证。
 
 当前研究方向是 **CKKS 算术 + Logic FHE 非线性计算**。本版采用 Libra 的 SCFHE 方言及 HEIR/CHLOE 的 RLWE/LWE 方言，接入 Microsoft SEAL 和 OpenFHE。已加入手写的 FHE 简化、公共子表达式消除、无用运算裁剪和资源分析，并支持显式开启乘法平衡与有界 ReLU 近似；文献依据、开发计划和使用方式见 [开发计划](docs/development/PLAN.md) 与 [Pass 文档](docs/development/PASSES.md)。
 
@@ -74,31 +74,36 @@ Compile_via_MLIR/
 │   ├── Conversion/FHE/     arith -> SCFHE -> HEIR 的降级 pass
 │   ├── Pipelines/FHE/      pass 声明、注册与 FHE 专项优化
 │   └── CodeGen/FHE/        FHE MLIR -> C++ 的可复用代码生成库
-├── front/crossfhe/         PyTorch 导出、ONNX 导入、Python 驱动
+├── front/crossfhe/         PyTorch/ONNX 模型接入、统一 CLI 与编译流程编排
 ├── backend/
+│   ├── toolchain.py        工具链配置、原生命令及子进程日志
+│   ├── execution.py        后端指纹、runner 构建与四阶段加密执行
+│   ├── packed.py           CKKS 周期布局与 HEIR MatVec 生成
+│   ├── ai/                 backend.ai：任务、提示词、provider、调度及验证驱动
+│   ├── api/                IR → runtime → 密码库函数映射、约束与 revision
 │   ├── seal/               SEAL CKKS 运行时和客户端/服务端 runner
 │   ├── openfhe/            CKKS/FHEW 转换、逻辑自举和 runner
 │   └── phantom/            可选 CUDA CKKS 运行时和 runner
 ├── tools/                 crossfhe-opt、crossfhe-translate 命令入口
-├── tests/                 front、compiler、backend、e2e 与测试脚本回归
+├── tests/                 front、compiler、backend、e2e，含 backend/ai 测试
 ├── examples/              可接入的 PyTorch 示例模型
 ├── scripts/               固定依赖构建、结果收集、源码打包
 ├── build-tools/cmake/      LLVM/MLIR 配置及保留的旧构建入口
 ├── third_party/            LLVM、SEAL、OpenFHE、PhantomFHE 四个 Git 子模块
 ├── docs/                   方言来源、数值契约、扩展设计与验证记录
 ├── CMakeLists.txt          默认构建 FHE 编译器的根入口
-├── pyproject.toml          front 的 Python 包与测试配置
+├── pyproject.toml          Python 包、后端资源与测试配置
 └── requirements.txt        已验证的 Python 工具版本
 ```
 
 | 模块 | 主要接口/产物 | 如何验证 |
 | --- | --- | --- |
-| `front` | `export_torch`、`import_onnx`，输出 `func/arith` MLIR 和 tensor mapping | `python scripts/run_tests.py --suite front` |
+| `front` | `export_torch`、`import_onnx` 输出 MLIR 和 tensor mapping；`python -m crossfhe`、`compile_onnx`、`compile_torch` 编排编译与执行 | 前端测试、编译器接口和端到端测试 |
 | `compiler/Dialect` | `!scfhe.scfhecipher`、`!heir.rlwecipher`、`!heir.lweciphervec` | CTest 方言注册测试；`crossfhe-opt --show-dialects` |
 | `compiler/Conversion` | `--ppml-to-scfhe`、`--ppml-to-heir` | `python scripts/run_tests.py --suite compiler` |
 | `compiler/Pipelines` | `--ppml-fhe-optimize` 和独立专项 pass | 优化前后资源分析、原生正反例与真实加密 A/B 测试 |
 | `compiler/CodeGen` | `generateCpp`，输出 `model.hpp` | CTest 原生代码生成测试及端到端 C++ 编译 |
-| `backend` | `constant/add/sub/mul/to_logic/sign/to_ckks_mask/select`，输出密文 | `python scripts/run_tests.py --suite cpu` 或 `--suite gpu` |
+| `backend` | CKKS 布局、runner 构建/执行、AI 候选验证及 `constant/add/sub/mul/to_logic/sign/to_ckks_mask/select` 密码库接口 | `python scripts/run_tests.py --suite cpu` 或 `--suite gpu`；AI 纯 Python 测试 |
 | `tools` | `crossfhe-opt`、`crossfhe-translate` | `ctest --test-dir build --output-on-failure` |
 | 全链路 | PyTorch 参考输出与客户端解密输出比较 | `python scripts/run_tests.py --suite all` |
 
@@ -111,7 +116,7 @@ Compile_via_MLIR/
 | `crossfhe-opt` | MLIR -> MLIR | 注册 FHE 方言，运行 lowering、分析和优化 pass |
 | `crossfhe-translate` | 最终 FHE MLIR -> C++ | 检查后端能力，调用 `compiler/CodeGen/FHE` 生成 `model.hpp` |
 
-两个工具分别完成 IR 处理和 C++ 生成。旧 `nisl-opt`、`nisl-compile` 仅用于可选 legacy 路径，行为和实现见 [命令入口说明](tools/README.md)。
+两个工具分别完成 IR 处理和 C++ 生成。旧 `nisl-compile` 仅用于可选 legacy 路径，行为和实现见 [命令入口说明](tools/README.md)。
 
 ## 构建整个项目
 
@@ -152,7 +157,7 @@ python -m pip install -r requirements.txt
 python -m pip install --no-deps -e .
 ```
 
-`pyproject.toml` 安装的 Python 包名为 `crossfhe-front`，导入名和命令入口仍是 `crossfhe`。跳过前端安装时，使用原生 CTest 和直接编译 MLIR 的方式验证。无需安装另外三个上游编译器的 Python 环境。
+`pyproject.toml` 的发行包名为 `crossfhe-front`，包含前端与 CLI 包 `crossfhe`、后端包 `backend`（含 `backend.ai`）及本地函数映射 JSON；命令入口仍为 `crossfhe`。直接使用源码时，在仓库根目录设置 `export PYTHONPATH="$PWD:$PWD/front${PYTHONPATH:+:$PYTHONPATH}"`，使切换目录后仍可导入这些包。跳过前端安装时，使用原生 CTest 和直接编译 MLIR 的方式验证。无需安装另外三个上游编译器的 Python 环境。
 
 ### 3. 构建编译器和默认 CPU 后端
 
@@ -184,12 +189,12 @@ python scripts/bootstrap.py --init-only
 PhantomFHE 是可选实验性 CUDA 后端。需要同时构建该库并注册工具链配置时执行（下例适用于本机 L20）：
 
 ```bash
-python scripts/bootstrap.py --with-phantom \
+python scripts/bootstrap.py --enable-cuda \
   --cuda-compiler /usr/local/cuda-13.4/bin/nvcc \
   --cuda-architectures 89 --jobs 4
 ```
 
-除 `--init-only` 外，bootstrap 成功后会重写 `.crossfhe/toolchain.json`；不带 `--with-phantom` 会移除原有的 Phantom 注册。已配置 GPU 的环境重新 bootstrap 时，应继续带上 `--with-phantom` 及相应 CUDA、源码和构建目录参数。日常增量更新使用 `cmake --build` 或下文测试脚本，无需重新 bootstrap。
+除 `--init-only` 外，bootstrap 成功后会重写 `.crossfhe/toolchain.json`；不带 `--enable-cuda` 会移除原有的 Phantom 注册。已配置 GPU 的环境重新 bootstrap 时，应继续带上 `--enable-cuda` 及相应 CUDA、源码和构建目录参数。日常增量更新使用 `cmake --build` 或下文测试脚本，无需重新 bootstrap。
 
 源码包不包含第三方源码和 Git 元数据。使用源码包时，先准备好四个依赖目录，通过 `--llvm-source`、`--seal-source`、`--openfhe-source`、`--phantom-source` 指定路径。脚本仅通过 Git 子模块初始化依赖，不额外实现克隆回退，也不自动下载编译工具链。
 
@@ -364,7 +369,7 @@ CLI 会打印解密输出和 report。参考比较成功时 `validation.passed` 
 
 ### 运行测试
 
-首次测试前，按上文安装依赖并完成相应后端的 bootstrap；已完成配置的环境只需激活 `CompilerforFHE`。仅前端可用 `python -m pip install '.[dev]'` 安装依赖，仅脚本回归只需 pytest，这两类测试不要求 bootstrap。
+首次测试前，按上文安装依赖并完成相应后端的 bootstrap；已完成配置的环境只需激活 `CompilerforFHE`。仅前端可用 `python -m pip install '.[dev]'` 安装依赖，不要求 bootstrap。
 
 在仓库根目录选择测试范围：
 
@@ -376,10 +381,9 @@ python scripts/run_tests.py --suite compiler  # 编译器增量构建 + CTest + 
 python scripts/run_tests.py --suite cpu       # 全部 CPU 测试，含 SEAL/OpenFHE 真实加密
 python scripts/run_tests.py --suite gpu       # CTest + Phantom GPU 真实加密测试
 python scripts/run_tests.py --suite all       # 全部 CPU/GPU 测试
-python scripts/run_tests.py --suite scripts   # 仅测试基础设施回归
 ```
 
-没有 GPU 的机器使用 `--suite cpu`；`gpu` / `all` 要求 CUDA、可用 GPU 和已通过 `--with-phantom` 注册的后端。CPU 套件会更新 SEAL 和 OpenFHE（含安装），GPU 套件会更新 Phantom。脚本自动加载仓库源码，无需额外 editable install 或设置 `PYTHONPATH`。
+没有 GPU 的机器使用 `--suite cpu`；`gpu` / `all` 要求 CUDA、可用 GPU 和已通过 `--enable-cuda` 注册的后端。CPU 套件会更新 SEAL 和 OpenFHE（含安装），GPU 套件会更新 Phantom。脚本自动加载仓库源码，无需额外 editable install 或设置 `PYTHONPATH`。
 
 每次运行在 `.crossfhe/test-runs/` 下创建独立目录，保存构建和测试日志、JUnit、实际命令及 `summary.json`，终端打印 `Reports:` 路径。显示 `PASS` 且退出码为 `0` 表示所选测试通过；失败、跳过或未选中用例均返回非零状态。
 
@@ -387,9 +391,11 @@ python scripts/run_tests.py --suite scripts   # 仅测试基础设施回归
 
 ### 已完成的验证
 
-截至 **2026-11-17**，最新完整覆盖为 **127 项独立 Python 测试、7 项 CTest 全部通过，零跳过**。Python 按 CPU 119 项、GPU 8 项两组执行，两组互不重叠；没有把 quick 或复跑数量重复计入，也没有单独重跑完整 `--suite all`。结果及本机报告位置见 [测试流程修复与验证记录](TESTING_REPAIR_PLAN.md)。
+2026-11-17 精简后执行完整 `--suite all`：**235 项 Python 测试、7 项 CTest 全部通过，零失败、零跳过**，覆盖 SEAL、OpenFHE 和 Phantom CPU/GPU 路径。此次保留 legacy 与 AI 后端，清理范围、保留理由与报告位置见 [清理执行记录](CLEANUP_CANDIDATES.md#11-本次执行记录2026-11-17)。
 
-此前的 [Phantom 与 MatVec 验证](docs/VALIDATION-2026-11-17.md) 记录了原有 100 项 Python 测试、58 次加密执行及 Phantom 客户端解码修复；随后增加了 27 项测试基础设施回归。OpenFHE 回归使用显式 TOY 参数，默认安全参数的 ReLU 为单独功能测量。基线、优化和 MatVec 的历史结果分别见 [初始验证](docs/VALIDATION.md)、[本机基线报告](docs/VALIDATION-2026-11-16.md)、[优化报告](docs/development/RESULTS.md) 和 [MatVec 报告](docs/development/MATVEC.md)。
+清理前的 **2026-11-17 AI 后端首版验证**覆盖 **255 项独立 Python 测试、7 项 CTest 全部通过，零失败、零跳过**。先执行 246 项的完整 `--suite all`，随后对最终新增/修改内容执行定向检查与 quick，按测试身份去重后覆盖最终 255 项；未再次运行最终 255 项的单次 all。命令、结果及本机报告位置见 [AI 首版验证记录](docs/development/AI_BACKEND_VALIDATION.md)。
+
+此前的 [Phantom 与 MatVec 验证](docs/VALIDATION-2026-11-17.md) 记录了原有 100 项 Python 测试、58 次加密执行及 Phantom 客户端解码修复。测试基础设施元测试已移除，AI 后端测试位于 `tests/backend/ai/`；历史通过数不代表当前用例总数。OpenFHE 回归使用显式 TOY 参数，默认安全参数的 ReLU 为单独功能测量。基线、优化和 MatVec 的历史结果分别见 [初始验证](docs/VALIDATION.md)、[本机基线报告](docs/VALIDATION-2026-11-16.md)、[优化报告](docs/development/RESULTS.md) 和 [MatVec 报告](docs/development/MATVEC.md)。
 
 可从完成的运行中收集精度、转换次数、各阶段延迟和评估键大小：
 
@@ -411,7 +417,7 @@ python scripts/package_source.py --output CrossFHE-source.zip
 | 编译过程中被系统终止 | 降低 `--jobs`，先构建编译器小目标，再检查内存/交换空间 |
 | 找不到 `toolchain.json` | 完成全量 bootstrap；自定义配置可用 `python -m crossfhe --config /path/toolchain.json ...` |
 | 找不到 OpenFHE/SEAL CMake 配置 | 检查 `.crossfhe/toolchain.json` 中的库路径；完整 bootstrap 会生成或安装它们 |
-| `GPU tests require Phantom` / `phantom-ckks is not configured` | 按上文带 `--with-phantom` 重新注册后端；普通 bootstrap 会覆盖原有 GPU 注册 |
+| `GPU tests require Phantom` / `phantom-ckks is not configured` | 按上文带 `--enable-cuda` 重新注册后端；普通 bootstrap 会覆盖原有 GPU 注册 |
 | `model needs logic FHE` | 模型含比较或选择，使用 `--backend openfhe-cross` |
 | 未支持的 ONNX 算子报错 | 查看 [OPERATORS.md](docs/OPERATORS.md)，确认模型算子在当前支持范围内 |
 | 解密输出与参考结果不符 | 检查 report、比较数值范围和 margin；调整比较 scale 须基于数据范围校准 |
@@ -425,4 +431,8 @@ OpenFHE 后端的 Logic FHE 当前是 **FHEW sign bootstrapping**，支持比较
 
 默认优化组合在 `compiler/Pipelines/FHE/OptimizationHooks.cpp` 中编排；专项实现位于同目录的 `Optimizations.cpp`、`ApproximateRelu.cpp`。后续根据 [开发计划](docs/development/PLAN.md) 扩展 `compiler/Conversion/FHE` 和方言。新增库适配放入 `backend/`；FHE IR 到后端代码的生成仍归 `compiler/CodeGen/FHE`。Phantom 的 GPU 专项代价模型与性能优化留待后续实现。
 
-开发指南：[新建方言](docs/ADDING_DIALECT.md)、[新增 pass](docs/ADDING_PASS.md)。模块细节：[编译器](compiler/README.md)、[命令入口](tools/README.md)、[前端](front/README.md)、[后端](backend/README.md)、[测试](tests/README.md)。方言和许可证来源见 [docs/UPSTREAM.md](docs/UPSTREAM.md)，重构前后路径对照见 [docs/MIGRATION.md](docs/MIGRATION.md)。
+密码库函数映射可在本仓库的 [backend/api](backend/api/README.md) 查看：按 SEAL、OpenFHE、Phantom 列出 FHE IR → runtime 签名 → 实际库调用、约束与固定 revision。执行代码位于 `compiler/CodeGen/FHE` 和各后端 runtime，无需复制完整上游文档。
+
+AI 辅助后端实现位于 [backend/ai](backend/ai/README.md)（Python 包 `backend.ai`），负责公开任务、提示词、模型 provider、候选调度和验证驱动；`front/crossfhe` 接入 AI 命令，AI 实现直接复用 `backend.execution` 和 `backend.toolchain`。命令仍为 `python -m crossfhe ai prepare|baseline|run`，默认使用上述本地函数映射，并封存于任务的 `api_context.json.function_mapping`。模型仅提出固定 DAG 的调度 JSON，经原生校验生成 C++、真实构建并进行同密文差分。支持现有 SEAL、OpenFHE、Phantom 后端；独立 TFHE 后端尚未实现。默认流程不需要 `/shizy/fhe-coder`，`--documentation-root` 可选追加 SEAL/OpenFHE 辅助摘要。离线运行、在线模型配置和当前边界见 [AI 后端说明](docs/development/AI_BACKEND.md)。
+
+开发指南：[新建方言](docs/ADDING_DIALECT.md)、[新增 pass](docs/ADDING_PASS.md)。模块细节：[编译器](compiler/README.md)、[命令入口](tools/README.md)、[前端与 CLI](front/README.md)、[后端](backend/README.md)、[测试](tests/README.md)。方言和许可证来源见 [docs/UPSTREAM.md](docs/UPSTREAM.md)。

@@ -34,6 +34,8 @@ def main(argv=None):
     exporter.add_argument("--factory",required=True,help="module:function returning a PyTorch nn.Module")
     exporter.add_argument("--inputs",type=Path,required=True,help="NPZ tensors, passed in NPZ name order")
     exporter.add_argument("--output",type=Path,required=True)
+    from backend.ai.cli import add_parser as add_ai_parser
+    add_ai_parser(commands)
     args=parser.parse_args(argv)
     try:
         if args.command=="export":
@@ -47,6 +49,11 @@ def main(argv=None):
             np.savez(args.output.with_suffix(".reference.npz"),**reference)
             print(args.output.resolve()); return 0
         config=read_config(args.config)
+        if args.command=="ai":
+            from backend.ai.cli import run as run_ai
+            result, exit_code = run_ai(args, config)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return exit_code
         if args.command=="compile":
             artifact=compile_onnx(args.model,args.output,config=config,backend=args.backend,max_operations=args.max_operations,
                 optimization=args.optimization,relu_bound=args.relu_bound,relu_max_error=args.relu_max_error,packing=args.packing)

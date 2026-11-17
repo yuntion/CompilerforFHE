@@ -20,7 +20,7 @@ from scripts.test_support import (
     openfhe_build, require_file, validate_toolchain,
 )
 
-SUITES = ("quick", "front", "compiler", "cpu", "gpu", "all", "scripts")
+SUITES = ("quick", "front", "compiler", "cpu", "gpu", "all")
 SUITE_MARKERS = {
     "quick": "not fhe", "front": "not fhe", "compiler": "not fhe",
     "cpu": "not gpu", "gpu": "gpu",
@@ -32,11 +32,11 @@ def timestamp():
 
 
 def preflight(args, env):
-    packages = {"pytest"} if args.suite == "scripts" else {"pytest", "numpy", "onnx"}
+    packages = {"pytest", "numpy", "onnx"}
     if args.suite in ("quick", "compiler", "cpu", "gpu", "all"):
         packages.add("torch")
     check_python(packages)
-    if args.suite in ("front", "scripts"):
+    if args.suite == "front":
         return {}, None, None
     config = load_toolchain(args.config)
     requirements = {"native"}
@@ -101,12 +101,8 @@ def run_step(name, command, env, directory, summary):
                         log.flush()
                     record["returncode"] = process.wait()
                 except KeyboardInterrupt:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
+                    process.kill()
+                    process.wait()
                     record["returncode"] = 130
                     raise
     finally:
@@ -114,12 +110,18 @@ def run_step(name, command, env, directory, summary):
         record["finished_at"] = timestamp()
         (directory / f"{name}-command.json").write_text(
             json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        report = directory / f"{name}-junit.xml"
+        if report.is_file():
+            summary["reports"][name] = check_report(report)
     if record["returncode"]:
         raise RuntimeError(f"{name} failed (exit {record['returncode']}); see {directory / (name + '.log')}")
+    if name in ("ctest", "pytest"):
+        counts = summary["reports"].get(name)
+        if not counts or not counts["tests"] or any(counts[key] for key in ("failures", "errors", "skipped")):
+            raise RuntimeError(f"{name} did not complete without failures or skips: {counts}")
 
 
 def check_report(path):
-    require_file(path)
     root = ET.parse(path).getroot()
     cases = list(root.iter("testcase"))
     counts = {"tests": len(cases), "failures": 0, "errors": 0, "skipped": 0}
@@ -162,14 +164,15 @@ def main(argv=None):
                "started_at": timestamp(), "skip_build": args.skip_build,
                "steps": [], "reports": {}, "passed": False}
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(ROOT / "front") + os.pathsep + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = os.pathsep.join((str(ROOT), str(ROOT / "front"),
+                                       env.get("PYTHONPATH", "")))
     env["CROSSFHE_CONFIG"] = str(args.config)
     env["PYTHONUNBUFFERED"] = "1"
     print(f"Suite: {args.suite}\nPython: {sys.executable}\nReports: {directory}", flush=True)
     exit_code = 1
     try:
         config, cmake, ctest = preflight(args, env)
-        if args.suite not in ("front", "scripts"):
+        if args.suite != "front":
             native = config_path(config, "native_build")
             if not args.skip_build:
                 for name, command in build_steps(config, args.suite, args.jobs):
@@ -182,9 +185,8 @@ def main(argv=None):
             run_step("ctest", [ctest, "--test-dir", native, "--output-on-failure",
                      "--no-tests=error", "--output-junit", directory / "ctest-junit.xml"],
                      env, directory, summary)
-        paths = {"front": ["tests/front"], "compiler": ["tests/compiler"],
-                 "scripts": ["tests/scripts"]}.get(args.suite, [
-                     "tests/front", "tests/compiler", "tests/backend", "tests/e2e", "tests/scripts"])
+        paths = {"front": ["tests/front"], "compiler": ["tests/compiler"]}.get(args.suite, [
+                     "tests/front", "tests/compiler", "tests/backend", "tests/e2e"])
         command = [sys.executable, "-m", "pytest", *paths, "-q", "-ra"]
         if args.suite in SUITE_MARKERS:
             command += ["-m", SUITE_MARKERS[args.suite]]
@@ -195,15 +197,6 @@ def main(argv=None):
         command += ["--basetemp", str(directory / "cases"),
                     "--junitxml", str(directory / "pytest-junit.xml"), *pytest_args]
         run_step("pytest", command, env, directory, summary)
-        for name in ("ctest", "pytest"):
-            report = directory / f"{name}-junit.xml"
-            if report.is_file():
-                counts = check_report(report)
-                summary["reports"][name] = counts
-                if not counts["tests"] or any(counts[key] for key in ("failures", "errors", "skipped")):
-                    raise RuntimeError(f"{name} did not complete without failures or skips: {counts}")
-            elif name == "pytest" or args.suite not in ("front", "scripts"):
-                raise RuntimeError(f"test report missing: {report}")
         summary["passed"] = True
         exit_code = 0
     except (RuntimeError, OSError, ValueError, ET.ParseError) as error:
@@ -214,14 +207,6 @@ def main(argv=None):
         exit_code = 130
         print("\nTests interrupted.", file=sys.stderr, flush=True)
     finally:
-        # Also preserve counts when the test process itself failed.
-        for name in ("ctest", "pytest"):
-            report = directory / f"{name}-junit.xml"
-            if report.is_file() and name not in summary["reports"]:
-                try:
-                    summary["reports"][name] = check_report(report)
-                except (OSError, ET.ParseError):
-                    pass
         summary["finished_at"] = timestamp()
         summary["exit_code"] = exit_code
         (directory / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")

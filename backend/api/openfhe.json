@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "backend": "openfhe-cross",
+  "library": "openfhe",
+  "library_version": "1.4.2",
+  "library_revision": "aa391988d354d4360f390f223a90e0d1b98839d7",
+  "runtime_header": "backend/openfhe/openfhe_runtime.hpp",
+  "runtime_sha256": "b2b46d94cf6bab81abca6c8820aae594a58a64fb22699026172c77d6f425bc29",
+  "mappings": [
+    {
+      "operation": "public_constant",
+      "ir_ops": [
+        "arith.constant"
+      ],
+      "runtime": "<none: codegen emits const double>",
+      "library_calls": [],
+      "description": "有限公开 f64 由代码生成器写成 C++ 常量，不调用密码库。",
+      "constraints": [
+        "这不是密文；需要密文常量时必须使用 heir.materialize -> constant。",
+        "不能把公开常量生成解释为明文回退执行。"
+      ]
+    },
+    {
+      "operation": "constant",
+      "ir_ops": [
+        "heir.materialize"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::constant(double value)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::MakeCKKSPackedPlaintext",
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::Encrypt"
+      ],
+      "description": "检查有限值；用 MakeCKKSPackedPlaintext({value},1,0,nullptr,1) 构造标量明文，并用公开密钥加密。",
+      "constraints": [
+        "公开值物化，使用初始 level 0 与一个逻辑槽。",
+        "候选不得调用解密或取得私钥；随机物化的效果必须保留。"
+      ]
+    },
+    {
+      "operation": "add_cipher_cipher",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::add(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalAdd"
+      ],
+      "description": "直接返回 OpenFHE EvalAdd(a,b) 的新结果。",
+      "constraints": [
+        "标量 CKKS 路径；本项目没有对应 OpenFHE packed MatVec API。",
+        "level/scale 的适配遵循固定上下文与 OpenFHE 实现，runtime 不暴露独立 align。"
+      ]
+    },
+    {
+      "operation": "add_cipher_plain",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::add(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalAdd"
+      ],
+      "description": "使用 EvalAdd 的公开 double 重载；没有客户端交互。",
+      "constraints": [
+        "公开 b 由编译器保证有限。"
+      ]
+    },
+    {
+      "operation": "add_plain_cipher",
+      "ir_ops": [
+        "heir.rlweadd"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::add(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalAdd"
+      ],
+      "description": "转发 add(b,a)，选择密文/公开 double 重载。",
+      "constraints": [
+        "只交换加法的公开/密文参数位置。"
+      ]
+    },
+    {
+      "operation": "add_plain_plain",
+      "ir_ops": [],
+      "runtime": "double crossfhe::Runtime::add(double a, double b)",
+      "library_calls": [],
+      "description": "runtime 中已有的公开 double 辅助重载，执行普通 C++ a+b。",
+      "constraints": [
+        "不能将其作为密文节点实现或明文后备。",
+        "没有密码库调用，也不证明秘密数据可以转为公开。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::sub(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalSub"
+      ],
+      "description": "直接调用 EvalSub(a,b)，保持减法参数顺序。",
+      "constraints": [
+        "不使用 SEAL/Phantom 的显式 encrypt_zero 自减特殊路径。"
+      ]
+    },
+    {
+      "operation": "sub_cipher_plain",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::sub(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalSub"
+      ],
+      "description": "调用 EvalSub 的密文减公开标量重载。",
+      "constraints": [
+        "公开 b 必须有限；保持 a-b 的顺序。"
+      ]
+    },
+    {
+      "operation": "sub_plain_cipher",
+      "ir_ops": [
+        "heir.rlwesub"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::sub(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalNegate",
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalAdd"
+      ],
+      "description": "计算 EvalAdd(EvalNegate(b),a)，实现公开 a 减密文 b。",
+      "constraints": [
+        "不能替换为 EvalSub(b,a)；公开 a 必须有限。"
+      ]
+    },
+    {
+      "operation": "sub_plain_plain",
+      "ir_ops": [],
+      "runtime": "double crossfhe::Runtime::sub(double a, double b)",
+      "library_calls": [],
+      "description": "普通 C++ a-b 辅助重载；select 的两个分支均公开时可用它形成公开差值。",
+      "constraints": [
+        "辅助算术的输入必须公开；输出之后仍须与加密 mask 组合。",
+        "不能把此重载宣称为同态减法。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::mul(const crossfhe::Cipher &a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalMult"
+      ],
+      "description": "直接调用 EvalMult(a,b)；该 OpenFHE 重载使用上下文中的乘法评估密钥。",
+      "constraints": [
+        "需要可信 runner 加载 EvalMult 评估密钥。",
+        "固定 runner 使用 FLEXIBLEAUTO；运行时没有可供候选任意调度的显式 rescale/relinearize 方法。"
+      ]
+    },
+    {
+      "operation": "mul_cipher_plain",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::mul(const crossfhe::Cipher &a, double b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalMult"
+      ],
+      "description": "调用 EvalMult 的公开 double 重载。",
+      "constraints": [
+        "遵守原上下文的 level/scale 与精度策略；不增加新参数选择权限。"
+      ]
+    },
+    {
+      "operation": "mul_plain_cipher",
+      "ir_ops": [
+        "heir.rlwemul"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::mul(double a, const crossfhe::Cipher &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalMult"
+      ],
+      "description": "转发 mul(b,a)，使用密文乘公开标量重载。",
+      "constraints": [
+        "公开 a 必须有限；结果为密文。"
+      ]
+    },
+    {
+      "operation": "mul_plain_plain",
+      "ir_ops": [],
+      "runtime": "double crossfhe::Runtime::mul(double a, double b)",
+      "library_calls": [],
+      "description": "runtime 中已有的公开 double 辅助重载，执行普通 C++ a*b。",
+      "constraints": [
+        "不产生或处理密文；不能用于实现加密 IR 节点。"
+      ]
+    },
+    {
+      "operation": "to_logic",
+      "ir_ops": [
+        "heir.depack"
+      ],
+      "runtime": "crossfhe::LogicCipher crossfhe::Runtime::to_logic(const crossfhe::Cipher &value)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalCKKStoFHEW"
+      ],
+      "description": "调用 EvalCKKStoFHEW(value,1)，得到单个 LWE 密文构成的向量，并检查向量长度为 1。",
+      "constraints": [
+        "固定为标量 numCtxts=1；不是任意张量拆包。",
+        "可信 runner 必须配置 CKKS/FHEW switching 密钥与比较预计算。",
+        "转换编码、comparison_scale 与上下文参数由任务冻结；首版调度保持保守效果顺序。"
+      ]
+    },
+    {
+      "operation": "sign",
+      "ir_ops": [
+        "heir.lut_lt"
+      ],
+      "runtime": "crossfhe::LogicCipher crossfhe::Runtime::sign(const crossfhe::LogicCipher &value)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::GetBinCCForSchemeSwitch",
+        "lbcrypto::BinFHEContext::EvalSign"
+      ],
+      "description": "检查一个逻辑密文后，调用切换上下文 EvalSign(value[0],true)，将单个返回密文包装回向量。",
+      "constraints": [
+        "schemeSwitch=true 必须保持，以便后续转换兼容。",
+        "这是 OpenFHE 内置 FHEW sign bootstrapping 路径，不是独立 TFHE 库后端。",
+        "支持当前 sign 比较编码，不代表已提供任意 LUT 或任意精度比较；近零/量化边界需独立验证。"
+      ]
+    },
+    {
+      "operation": "to_ckks_mask",
+      "ir_ops": [
+        "heir.repack"
+      ],
+      "runtime": "crossfhe::Cipher crossfhe::Runtime::to_ckks_mask(crossfhe::LogicCipher value)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalFHEWtoCKKS"
+      ],
+      "description": "检查长度为 1，调用 EvalFHEWtoCKKS(value,1,1,4,-1.0,1.0,0)，生成供 select 使用的 CKKS 近似布尔掩码。",
+      "constraints": [
+        "numCtxts=1,numSlots=1,p=4,pmin=-1,pmax=1,dim1=0 组成当前固定编码契约。",
+        "codegen 要求输入来自 heir.lut_lt；不能把一般 LWE 值直接解释为选择掩码。",
+        "参数 value 按值传递向量；底层接口接收向量引用。"
+      ]
+    },
+    {
+      "operation": "select",
+      "ir_ops": [
+        "heir.select"
+      ],
+      "runtime": "template<class A,class B> crossfhe::Cipher crossfhe::Runtime::select(const crossfhe::Cipher &mask, const A &a, const B &b)",
+      "library_calls": [
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalSub",
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalNegate",
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalMult",
+        "lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::EvalAdd"
+      ],
+      "description": "组合 runtime.sub/mul/add，计算 mask*(a-b)+b；mask 约为 1 时选择 a，约为 0 时选择 b。列出的库调用随 A/B 对应重载而选择，并非每次都会全部执行。",
+      "constraints": [
+        "不是库中的原生 select 函数，也不在主机按秘密值分支。",
+        "A/B 可为合法密文或公开 double；两者公开时 sub 只使用公开 C++ 算术。",
+        "mask 必须遵守既有转换/sign 编码；不允许模型自行改写掩码语义。"
+      ]
+    }
+  ],
+  "codegen_source": "compiler/CodeGen/FHE/CodeGen.cpp",
+  "provenance": "逐条核对本项目 codegen/runtime 与固定 revision 的上游头文件；描述当前已实现的适配路径，不是库的完整能力清单。"
+}

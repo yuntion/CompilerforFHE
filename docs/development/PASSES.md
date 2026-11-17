@@ -43,7 +43,7 @@ build/bin/crossfhe-translate artifacts/relu-poly.mlir --backend=seal-ckks \
 ## Python / CLI
 
 ```bash
-export PYTHONPATH="$PWD/front${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$PWD:$PWD/front${PYTHONPATH:+:$PYTHONPATH}"
 python -m crossfhe demo affine --backend seal-ckks --optimization scalar --output artifacts/affine-opt
 python -m crossfhe demo affine --backend seal-ckks --optimization none --output artifacts/affine-base
 ```

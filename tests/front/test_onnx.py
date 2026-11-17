@@ -51,6 +51,8 @@ def test_relu_preserves_comparison_and_select(tmp_path):
     assert mlir.count("arith.select")==2
     assert manifest["logic_comparisons"]==2
     assert manifest["outputs"][0]["shape"]==[2]
+    assert "CKKS" not in manifest["numeric_semantics"]
+    assert "layout" not in manifest
 
 
 def test_scalar_limit_rejected_before_large_lowering(tmp_path):

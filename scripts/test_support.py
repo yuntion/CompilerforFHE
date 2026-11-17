@@ -14,21 +14,22 @@ PATH_KEYS = ("native_build", "seal_dir", "openfhe_dir", "openfhe_build",
 def require_file(path):
     path = Path(path)
     if not path.is_file():
-        raise RuntimeError(f"required file missing: {path}; run python scripts/bootstrap.py first")
+        raise RuntimeError(f"required file missing: {path}")
     return path
 
 
-def config_path(config, name):
-    value = config.get(name)
+def setting(value, name):
     if not isinstance(value, str) or not value:
         raise RuntimeError(f"missing toolchain setting: {name}; run python scripts/bootstrap.py first")
-    return (ROOT / Path(value).expanduser()).resolve()
+    return value
+
+
+def config_path(config, name):
+    return (ROOT / Path(setting(config.get(name), name)).expanduser()).resolve()
 
 
 def executable(value, label):
-    if not isinstance(value, str) or not value:
-        raise RuntimeError(f"missing toolchain setting: {label}; run python scripts/bootstrap.py first")
-    found = shutil.which(value)
+    found = shutil.which(setting(value, label))
     if not found:
         raise RuntimeError(f"{label} is not executable: {value}; run python scripts/bootstrap.py again")
     return str(Path(found).resolve())
@@ -76,7 +77,7 @@ def validate_toolchain(config, requirements, *, built=True):
             require_file(config_path(config, key) / filename)
     if "gpu" in requirements:
         if not config.get("phantom_library"):
-            raise RuntimeError("GPU tests require Phantom; run python scripts/bootstrap.py --with-phantom first")
+            raise RuntimeError("GPU tests require Phantom; run python scripts/bootstrap.py --enable-cuda first")
         require_file(config_path(config, "phantom_source") / "include/phantom.h")
         executable(config.get("cuda_compiler"), "cuda_compiler")
         if built:
@@ -105,26 +106,15 @@ def check_build_source(build, source):
 
 
 def openfhe_build(config):
-    """Find an old config's build only when source AND install prefix match."""
+    """Use the registered build, checking its source and install destination."""
+    build = config_path(config, "openfhe_build")
+    source = setting(config.get("sources", {}).get("openfhe"), "sources.openfhe")
+    cache = check_build_source(build, source)
     installed = config_path(config, "openfhe_dir")
     prefix = installed.parent if installed.name == "CMake" else installed.parents[1]
-    sources = config.get("sources", {})
-    source = sources.get("openfhe") if isinstance(sources, dict) else None
-    if not source:
-        raise RuntimeError("missing sources.openfhe; run python scripts/bootstrap.py again")
-    if config.get("openfhe_build"):
-        candidates = [config_path(config, "openfhe_build")]
-    else:
-        candidates = sorted(path.parent for path in prefix.parent.glob("*/CMakeCache.txt"))
-    matches = []
-    for candidate in candidates:
-        cache = read_cache(candidate)
-        if (Path(cache.get("CMAKE_HOME_DIRECTORY", "")).resolve() == Path(source).resolve()
-                and Path(cache.get("CMAKE_INSTALL_PREFIX", "")).resolve() == prefix):
-            matches.append(candidate)
-    if len(matches) != 1:
+    if Path(cache.get("CMAKE_INSTALL_PREFIX", "")).resolve() != prefix:
         raise RuntimeError(
-            "cannot identify a unique OpenFHE build matching its source and install prefix; "
-            "run python scripts/bootstrap.py --openfhe-build /path/to/build again"
+            f"OpenFHE install prefix mismatch: {build} does not install to {prefix}; "
+            "run python scripts/bootstrap.py again"
         )
-    return matches[0]
+    return build

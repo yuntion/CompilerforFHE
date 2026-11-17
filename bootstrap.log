@@ -1,4 +1,0 @@
-+ git clone --no-checkout https://github.com/microsoft/SEAL.git /home/Compile_via_MLIR/third_party/SEAL
-Cloning into '/home/Compile_via_MLIR/third_party/SEAL'...
-fatal: unable to access 'https://github.com/microsoft/SEAL.git/': Failed to connect to github.com port 443 after 130975 ms: Connection timed out
-bootstrap failed: Command '['git', 'clone', '--no-checkout', 'https://github.com/microsoft/SEAL.git', '/home/Compile_via_MLIR/third_party/SEAL']' returned non-zero exit status 128.

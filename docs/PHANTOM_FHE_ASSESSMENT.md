@@ -112,7 +112,7 @@ if (result.chain_index() != value.chain_index())
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh
 conda activate CompilerforFHE
-export PYTHONPATH="$PWD/front"
+export PYTHONPATH="$PWD:$PWD/front"
 
 # 本次首次获取使用 clone --depth 1；下面额外 fetch 固定 revision，方便未来复现。
 git clone --depth 1 https://github.com/encryptorion-lab/phantom-fhe.git \

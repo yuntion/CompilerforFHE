@@ -1,3 +1,5 @@
+.vscode
+
 .crossfhe/
 .venv/
 artifacts/
@@ -9,5 +11,6 @@ __pycache__/
 *.pyc
 CrossFHE-source*.zip
 articles
+*.log
 
 validation/

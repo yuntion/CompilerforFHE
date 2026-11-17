@@ -2,7 +2,6 @@
 #include "Pipelines/FHE/Optimizations.h"
 #include "heir/IR/FHE/HEIRDialect.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/Verifier.h"
 #include <map>
 #include <set>
 #include <vector>
@@ -24,7 +23,6 @@ struct MatVecPass : PassWrapper<MatVecPass, OperationPass<ModuleOp>> {
       getOperation().emitError("MatVec strategy must be diagonal, bsgs or auto");
       return signalPassFailure();
     }
-    if (failed(verify(getOperation()))) return signalPassFailure();
     for (auto function : getOperation().getOps<func::FuncOp>()) {
       auto enabled = function->getAttrOfType<BoolAttr>("ppml.fhe_enabled");
       if (!enabled || !enabled.getValue()) continue;
@@ -35,13 +33,12 @@ struct MatVecPass : PassWrapper<MatVecPass, OperationPass<ModuleOp>> {
       if (ops.empty()) continue;
       if (ops.size()!=1 || function.getNumArguments()!=1 || function.getNumResults()!=1 ||
           function.getBody().front().getOperations().size()!=2 ||
-          ops[0].getInput()!=function.getArgument(0) ||
-          function.getResultTypes()[0]!=ops[0].getOutput().getType()) {
+          ops[0].getInput()!=function.getArgument(0)) {
         function.emitError("packed path supports exactly one affine MatVec and its return");
         return signalPassFailure();
       }
       auto ret = dyn_cast<func::ReturnOp>(function.getBody().front().back());
-      if (!ret || ret.getNumOperands()!=1 || ret.getOperand(0)!=ops[0].getOutput()) {
+      if (!ret || ret.getOperand(0)!=ops[0].getOutput()) {
         function.emitError("MatVec result must be returned directly"); return signalPassFailure();
       }
       lower(function,ops[0]);

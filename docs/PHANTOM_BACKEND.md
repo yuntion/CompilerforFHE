@@ -11,8 +11,8 @@
 ```bash
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
-export PYTHONPATH="$PWD/front"
-python scripts/bootstrap.py --with-phantom \
+export PYTHONPATH="$PWD:$PWD/front${PYTHONPATH:+:$PYTHONPATH}"
+python scripts/bootstrap.py --enable-cuda \
   --cuda-compiler /usr/local/cuda-13.4/bin/nvcc --cuda-architectures 89 --jobs 8
 
 python -m crossfhe demo affine --backend phantom-ckks --packing auto \
@@ -21,7 +21,7 @@ python -m crossfhe demo square-mlp --backend phantom-ckks \
   --output artifacts/phantom-square --atol 1e-4 --rtol 1e-5
 ```
 
-已有依赖库和编译器时可以使用 `bootstrap.py --skip-build --with-phantom` 注册现有构建；通过 `--phantom-build` 指定含 `lib/libPhantom.so` 的目录。`--skip-build` 不会更新旧编译器，代码生成器必须先包含本次后端改动。
+已有依赖库和编译器时可以使用 `bootstrap.py --skip-build --enable-cuda` 注册现有构建；通过 `--phantom-build` 指定含 `lib/libPhantom.so` 的目录。`--skip-build` 不会更新旧编译器，代码生成器必须先包含本次后端改动。
 
 也可以从 MLIR 生成头文件，并独立编译 runner：
 
@@ -62,7 +62,7 @@ GPU 测试覆盖编译器生成的 diagonal/BSGS/auto、首尾槽基向量及重
 
 ## 本机接入验证（2026-11-16）
 
-环境为 NVIDIA L20、CUDA 13.4、GCC 13.3，编译器使用固定 LLVM 17.0.6（`6009708b4367171ccdbf4b5905cb6a803753fe18`）。重建了默认 `build/bin` 并通过 `bootstrap.py --skip-build --with-phantom` 注册本机现有 Phantom 库；完整测试使用默认 `.crossfhe/toolchain.json`。
+环境为 NVIDIA L20、CUDA 13.4、GCC 13.3，编译器使用固定 LLVM 17.0.6（`6009708b4367171ccdbf4b5905cb6a803753fe18`）。重建了默认 `build/bin` 并通过 `bootstrap.py --skip-build --enable-cuda` 注册本机现有 Phantom 库；完整测试使用默认 `.crossfhe/toolchain.json`。
 
 | 验证 | 结果 |
 | --- | --- |

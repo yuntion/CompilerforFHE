@@ -4,6 +4,8 @@
 
 日期：2026-11-16。开发顺序见 [MATVEC_PLAN.md](MATVEC_PLAN.md)。沿用 `CompilerforFHE` Conda 环境，不安装 front Python 包。
 
+当前源码已拆分为 `front/crossfhe/affine.py`（公开仿射结构解析）、`backend/packed.py`（CKKS 布局与 HEIR MatVec）、`front/crossfhe/pipeline.py`（编译编排）及 `backend/execution.py`（runner 与加密执行）。下文保留开发时的路径、命令和实测记录；当前源码加载与 CLI 用法见 [前端与 CLI 说明](../../front/README.md)。
+
 本机 CPU 为 AMD EPYC 9754，工具链、包版本与测试汇总见 [environment.json](validation/matvec/environment.json)。原有 OpenFHE 回归仍使用既有 TOY 测试配置；本次新增 MatVec 加密执行全部使用 SEAL tc128。
 
 ## 相关工作与采用的部分
@@ -51,7 +53,8 @@ y' = sum_g Rot(sum_j RotPlain(D_(g+j),-g) * Rot(x',j), g)
 
 | 位置 | 实现 |
 |---|---|
-| `front/crossfhe/packed.py` | 在标量化前识别公开 MatMul/Gemm 及公开偏置，保留公开矩阵和向量形状 |
+| `front/crossfhe/affine.py` | 识别公开 MatMul/Gemm 及公开偏置，保留公开矩阵和向量形状 |
+| `backend/packed.py` | 选择 CKKS 周期布局并生成 HEIR MatVec |
 | `compiler/Dialect/HEIR/include/heir/IR/FHE/HEIR.td`、`PackedOps.cpp` | `heir.matvec`、`packed_rotate`、`packed_mul_plain`、`packed_add_plain`、`packed_add`、`packed_zero`；类型/有限系数/矩阵和周期尺寸 verifier |
 | `compiler/Pipelines/FHE/MatVec.cpp` | 真正的 MLIR pass `--ppml-fhe-matvec`，构造 SSA 原语图、非零对角线筛选与 BSGS 规划 |
 | `Optimizations.cpp` | 新原语的深度/资源统计，复用 CSE 和 DCE；随机 `packed_zero` 不做 CSE |
@@ -91,7 +94,7 @@ model-runner decrypt CLIENT SERVER/output.ct CLIENT/output.bin
 ```bash
 source /root/miniconda3/etc/profile.d/conda.sh
 conda activate CompilerforFHE
-export PYTHONPATH="$PWD/front"
+export PYTHONPATH="$PWD:$PWD/front"
 
 cmake --build build --target crossfhe-opt crossfhe-translate --parallel 8
 python -m crossfhe demo affine --backend seal-ckks --packing auto \

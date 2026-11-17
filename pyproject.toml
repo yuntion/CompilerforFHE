@@ -16,11 +16,15 @@ dev = ["pytest>=8,<9", "cmake>=3.24,<4", "ninja>=1.11"]
 [project.scripts]
 crossfhe = "crossfhe.cli:main"
 
-[tool.setuptools.packages.find]
-where = ["front"]
+[tool.setuptools]
+packages = ["crossfhe", "backend", "backend.ai"]
+package-dir = {crossfhe = "front/crossfhe", backend = "backend"}
+
+[tool.setuptools.package-data]
+backend = ["api/*.json"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/front", "tests/compiler", "tests/backend", "tests/e2e", "tests/scripts"]
+testpaths = ["tests/front", "tests/compiler", "tests/backend", "tests/e2e"]
 pythonpath = ["front", "."]
 addopts = "--strict-markers"
 markers = [

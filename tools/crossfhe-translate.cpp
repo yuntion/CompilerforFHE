@@ -6,6 +6,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 #include <set>
 
@@ -17,17 +18,61 @@ static llvm::cl::opt<std::string> backend("backend",
     llvm::cl::desc("seal-ckks, phantom-ckks or openfhe-cross"), llvm::cl::init("openfhe-cross"));
 static llvm::cl::opt<bool> emitContract("emit-contract",
     llvm::cl::desc("Emit the verified evaluator resource contract as JSON"));
+static llvm::cl::opt<bool> emitDag("emit-dag",
+    llvm::cl::desc("Emit the verified typed evaluator DAG as JSON"));
+static llvm::cl::opt<std::string> scheduleFile("schedule",
+    llvm::cl::desc("Candidate JSON containing a checked permutation in schedule"));
 
 int main(int argc, char **argv) {
   llvm::cl::ParseCommandLineOptions(argc, argv, "CrossFHE C++ code generation\n");
+  if ((emitContract && emitDag) || (!scheduleFile.empty() && (emitContract || emitDag))) {
+    llvm::errs() << "--emit-contract, --emit-dag and --schedule are mutually exclusive\n";
+    return 1;
+  }
   mlir::DialectRegistry registry;
   registry.insert<heir::HEIRDialect, mlir::arith::ArithDialect, mlir::func::FuncDialect>();
   mlir::MLIRContext context(registry);
   auto module = mlir::parseSourceFile<mlir::ModuleOp>(inputFile, &context);
   if (!module) return 1;
+  std::vector<std::string> schedule;
+  if (!scheduleFile.empty()) {
+    auto buffer = llvm::MemoryBuffer::getFile(scheduleFile);
+    if (!buffer) {
+      llvm::errs() << "cannot read schedule: " << buffer.getError().message() << "\n";
+      return 1;
+    }
+    if ((*buffer)->getBufferSize() > 4 * 1024 * 1024) {
+      llvm::errs() << "schedule JSON exceeds 4 MiB limit\n";
+      return 1;
+    }
+    auto parsed = llvm::json::parse((*buffer)->getBuffer());
+    if (!parsed) {
+      llvm::errs() << "invalid schedule JSON: " << llvm::toString(parsed.takeError()) << "\n";
+      return 1;
+    }
+    auto *object = parsed->getAsObject();
+    auto *entries = object ? object->getArray("schedule") : nullptr;
+    if (!entries) {
+      llvm::errs() << "schedule JSON must be an object containing a schedule array\n";
+      return 1;
+    }
+    for (const auto &entry : *entries) {
+      auto id = entry.getAsString();
+      if (!id) {
+        llvm::errs() << "schedule entries must be node ID strings\n";
+        return 1;
+      }
+      schedule.push_back(id->str());
+    }
+  }
   std::string code;
   llvm::raw_string_ostream generated(code);
-  if (mlir::failed(crossfhe::generateCpp(*module, backend, generated))) return 1;
+  if (emitDag) {
+    if (mlir::failed(crossfhe::emitDag(*module, backend, generated))) return 1;
+  } else if (emitContract) {
+    if (mlir::failed(crossfhe::validateEvaluator(*module, backend))) return 1;
+  } else if (mlir::failed(crossfhe::generateCpp(*module, backend, generated,
+                                             scheduleFile.empty() ? nullptr : &schedule))) return 1;
   std::error_code error;
   llvm::raw_fd_ostream output(outputFile, error, llvm::sys::fs::OF_Text);
   if (error) { llvm::errs() << error.message() << "\n"; return 1; }
