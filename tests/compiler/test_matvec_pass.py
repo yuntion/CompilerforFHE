@@ -9,14 +9,13 @@ import pytest
 
 from crossfhe.frontend import FrontendError
 from crossfhe.packed import import_packed_onnx
-from crossfhe.pipeline import command, read_config, compile_onnx
+from crossfhe.pipeline import command, compile_onnx
 
 
 FIXTURE = Path(__file__).parent / "inputs/matvec.mlir"
 
 
-def lower(tmp_path, text, strategy="auto"):
-    config = read_config()
+def lower(tmp_path, config, text, strategy="auto"):
     source = tmp_path / "input.mlir"
     source.write_text(text)
     target = tmp_path / "lowered.mlir"
@@ -29,8 +28,9 @@ def lower(tmp_path, text, strategy="auto"):
 
 
 @pytest.mark.parametrize("strategy,rotations,baby", [("diagonal", 3, 4), ("bsgs", 2, 2), ("auto", 2, 2)])
-def test_native_selects_rotation_plan(tmp_path, strategy, rotations, baby):
-    path, result = lower(tmp_path, FIXTURE.read_text(), strategy)
+@pytest.mark.native
+def test_native_selects_rotation_plan(tmp_path, config, strategy, rotations, baby):
+    path, result = lower(tmp_path, config, FIXTURE.read_text(), strategy)
     assert "heir.matvec" not in path.read_text()
     assert result["resources"]["rotations"] == rotations
     # Uniform coefficients let CSE share equal giant-group products in BSGS.
@@ -47,13 +47,15 @@ def test_native_selects_rotation_plan(tmp_path, strategy, rotations, baby):
     ("tensor<4xf64>", "tensor<3xf64>", "bias must match"),
     ("dense<1.0>", "dense<0x7FF0000000000000>", "finite public"),
 ])
-def test_native_rejects_invalid_shapes_and_coefficients(tmp_path, old, new, message):
+@pytest.mark.native
+def test_native_rejects_invalid_shapes_and_coefficients(tmp_path, config, old, new, message):
     with pytest.raises(RuntimeError, match=message):
-        lower(tmp_path, FIXTURE.read_text().replace(old, new))
+        lower(tmp_path, config, FIXTURE.read_text().replace(old, new))
 
 
-def test_zero_matrix_has_no_rotations_or_plain_multiplications(tmp_path):
-    path, result = lower(tmp_path, FIXTURE.read_text().replace("dense<1.0>", "dense<0.0>"))
+@pytest.mark.native
+def test_zero_matrix_has_no_rotations_or_plain_multiplications(tmp_path, config):
+    path, result = lower(tmp_path, config, FIXTURE.read_text().replace("dense<1.0>", "dense<0.0>"))
     assert "heir.packed_zero" in path.read_text()
     assert result["nonzero_diagonals"] == result["multiplicative_depth"] == 0
     assert result["rotation_steps"] == []
@@ -67,21 +69,21 @@ def test_zero_matrix_has_no_rotations_or_plain_multiplications(tmp_path):
     (lambda s: s.replace('step = 1 : i64', 'step = 4 : i64'), "rotation step"),
     (lambda s: s.replace('values = dense<1.000000e+00>', 'values = dense<0.000000e+00>'), "zero plaintext"),
 ])
-def test_codegen_rejects_malformed_packed_contracts(tmp_path, mutation, message):
-    path, _ = lower(tmp_path, FIXTURE.read_text())
+@pytest.mark.native
+def test_codegen_rejects_malformed_packed_contracts(tmp_path, config, mutation, message):
+    path, _ = lower(tmp_path, config, FIXTURE.read_text())
     original = path.read_text()
     changed = mutation(original)
     assert changed != original
     path.write_text(changed)
-    config = read_config()
     with pytest.raises(RuntimeError, match=message):
         command([Path(config["native_build"]) / "bin/crossfhe-translate", path,
                  "--backend=seal-ckks", "-o", tmp_path / "out.hpp"], config)
 
 
-def test_openfhe_packed_path_is_rejected(tmp_path):
-    path, _ = lower(tmp_path, FIXTURE.read_text())
-    config = read_config()
+@pytest.mark.native
+def test_openfhe_packed_path_is_rejected(tmp_path, config):
+    path, _ = lower(tmp_path, config, FIXTURE.read_text())
     with pytest.raises(RuntimeError, match="require seal-ckks"):
         command([Path(config["native_build"]) / "bin/crossfhe-translate", path,
                  "--backend=openfhe-cross", "-o", tmp_path / "out.hpp"], config)
@@ -89,12 +91,12 @@ def test_openfhe_packed_path_is_rejected(tmp_path):
         compile_onnx("unused.onnx", tmp_path / "unused", backend="openfhe-cross", packing="auto")
 
 
-def test_unmarked_function_is_not_transformed(tmp_path):
+@pytest.mark.native
+def test_unmarked_function_is_not_transformed(tmp_path, config):
     # Use opt directly; codegen correctly rejects the remaining high-level op.
     text = FIXTURE.read_text().replace("ppml.fhe_enabled = true", "ppml.fhe_enabled = false")
     source = tmp_path / "disabled.mlir"
     source.write_text(text)
-    config = read_config()
     output, _ = command([Path(config["native_build"]) / "bin/crossfhe-opt", source, "--ppml-fhe-matvec"], config)
     assert "heir.matvec" in output and "heir.packed_mul_plain" not in output
 

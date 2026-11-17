@@ -1,150 +1,153 @@
-"""Build pinned native tools and register their paths for the Python driver."""
-from __future__ import annotations
-
+"""Initialize Git submodules, build CrossFHE dependencies, and write toolchain.json."""
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import sys
-import urllib.request
-import zipfile
 
-ROOT=Path(__file__).resolve().parents[1]
-PINS={
-    "compile_via_mlir":"3b7dd66313a709a08ba8bf09ba94cc197b15a994",
-    "heir":"d2e673e4374ed07b3c8791cbba71c6e08dd5ff08",
-    "chloe":"a7a4b9595699cc4386abaa1355fa059c6386b124",
-    "libra":"7edb01a668db8532157b06d95a546ffaf5d66aa7",
-    "seal":"119dc32e135cb89c1062076a69310d4413ebc824",
-    "openfhe":"aa391988d354d4360f390f223a90e0d1b98839d7",
-    "cereal":"984e3f194862b17916536b5fade40cba6e47a6fe",
-}
+ROOT = Path(__file__).resolve().parents[1]
+SOURCES = {"llvm": "third_party/llvm-project", "seal": "third_party/SEAL",
+           "openfhe": "third_party/OpenFHE", "phantom": "third_party/phantom-fhe"}
 
 
-def run(args,env=None):
-    print("+ "+subprocess.list2cmdline([str(a) for a in args]),flush=True)
-    subprocess.run([str(a) for a in args],env=env,check=True)
+def run(*command):
+    command = list(map(str, command))
+    print("+ " + shlex.join(command), flush=True)
+    subprocess.run(command, cwd=ROOT, check=True)
 
 
-def checkout(url,commit,directory):
-    git=["git"]+(["-c","http.sslBackend=openssl"] if os.name=="nt" else [])
-    directory=Path(directory)
-    if not (directory/".git").exists():
-        if directory.exists() and any(directory.iterdir()):
-            raise RuntimeError(f"nonempty dependency directory without Git metadata: {directory}")
-        directory.parent.mkdir(parents=True,exist_ok=True)
-        run(git+["clone","--no-checkout",url,directory])
-        run(git+["-C",directory,"checkout",commit])
-    actual=subprocess.check_output(git+["-C",str(directory),"rev-parse","HEAD"],text=True).strip()
-    if actual!=commit: raise RuntimeError(f"dependency revision mismatch: {directory}: {actual}")
+def git(path, *args):
+    return subprocess.check_output(["git", "-C", str(path), *args], text=True).strip()
 
 
-def executable(name):
-    if name=="cmake":
-        try:
-            import cmake
-        except ImportError:
-            pass
-        else:
-            bundled=Path(cmake.CMAKE_BIN_DIR)/(name+ (".exe" if os.name=="nt" else ""))
-            if bundled.is_file(): return bundled
-    if name=="ninja":
-        try:
-            import ninja
-        except ImportError:
-            pass
-        else:
-            bundled=Path(ninja.BIN_DIR)/(name+ (".exe" if os.name=="nt" else ""))
-            if bundled.is_file(): return bundled
-    found=shutil.which(name)
-    if found: return Path(found)
-    raise RuntimeError(f"{name} missing")
+def tool(name):
+    found = shutil.which(str(name))
+    if not found:
+        raise RuntimeError(f"required tool missing: {name}")
+    return found
+
+
+def initialize(args, sources):
+    for path in [*sources.values(), sources["openfhe"] / "third-party/cereal"]:
+        if (path / ".git").exists() and git(path, "status", "--porcelain"):
+            raise RuntimeError(f"dependency has local changes: {path}")
+    modules = [path for name, path in SOURCES.items() if getattr(args, name + "_source") is None]
+    if modules:
+        run("git", "submodule", "sync", "--", *modules)
+        run("git", "submodule", "update", "--init", "--depth", "1", "--", *modules)
+    if (sources["openfhe"] / ".git").exists():
+        run("git", "-C", sources["openfhe"], "submodule", "update", "--init", "--depth", "1",
+            "--", "third-party/cereal")
+    for name, marker in {"llvm": "mlir/include/mlir/IR/OpBase.td", "seal": "CMakeLists.txt",
+                         "openfhe": "third-party/cereal/include/cereal/cereal.hpp",
+                         "phantom": "include/phantom.h"}.items():
+        if not (sources[name] / marker).is_file():
+            raise RuntimeError(f"dependency source missing: {sources[name] / marker}")
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--work-dir",type=Path,default=ROOT/".crossfhe")
-    parser.add_argument("--llvm-source",type=Path,default=ROOT/"third_party/llvm-project")
-    parser.add_argument("--seal-source",type=Path)
-    parser.add_argument("--openfhe-source",type=Path)
-    parser.add_argument("--native-build",type=Path)
-    parser.add_argument("--openfhe-prefix",type=Path)
-    parser.add_argument("--openfhe-build",type=Path)
-    parser.add_argument("--toolchain",type=Path,help="compiler bin directory")
-    parser.add_argument("--jobs",type=int,default=4)
-    parser.add_argument("--skip-build",action="store_true",help="register already built artifacts")
-    args=parser.parse_args()
-    work=args.work_dir.resolve(); work.mkdir(parents=True,exist_ok=True)
-    llvm=args.llvm_source.resolve()
-    native=(args.native_build or ROOT/"build").resolve()
-    prefix=(args.openfhe_prefix or work/"openfhe-install").resolve()
-    if not (llvm/"mlir/include/mlir/IR/OpBase.td").is_file():
-        raise RuntimeError("use the LLVM snapshot bundled in Compile_via_MLIR via --llvm-source")
-    toolchain=args.toolchain
-    if toolchain is None and os.name=="nt":
-        name="llvm-mingw-20260922-ucrt-x86_64"
-        toolchain=work/"toolchains"/name/"bin"
-        if not (toolchain/"clang++.exe").is_file():
-            archive=work/(name+".zip")
-            url=f"https://github.com/mstorsjo/llvm-mingw/releases/download/20260922/{name}.zip"
-            if not archive.exists(): urllib.request.urlretrieve(url,archive)
-            if archive.stat().st_size!=190725905: raise RuntimeError("unexpected toolchain archive size")
-            hasher=hashlib.sha256()
-            with archive.open("rb") as stream:
-                for chunk in iter(lambda:stream.read(1024*1024),b""): hasher.update(chunk)
-            digest=hasher.hexdigest()
-            if digest!="e3ad77d117a4bea19a7a3b333341824d79a5a371004a10e25b8504e7b3047666":
-                raise RuntimeError("toolchain archive SHA-256 mismatch")
-            with zipfile.ZipFile(archive) as source:
-                destination=(work/"toolchains").resolve()
-                for member in source.infolist():
-                    if not (destination/member.filename).resolve().is_relative_to(destination):
-                        raise RuntimeError("invalid toolchain archive path")
-                source.extractall(destination)
-    suffix=".exe" if os.name=="nt" else ""
-    cxx=(toolchain/("clang++"+suffix)).resolve() if toolchain else executable("clang++" if shutil.which("clang++") else "g++")
-    cc=(toolchain/("clang"+suffix)).resolve() if toolchain else executable("clang" if shutil.which("clang") else "gcc")
-    cmake,ninja=executable("cmake"),executable("ninja")
-    env=os.environ.copy()
-    env["PATH"]=os.pathsep.join(str(p) for p in (cxx.parent,cmake.parent,ninja.parent))+os.pathsep+env.get("PATH","")
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in SOURCES:
+        parser.add_argument(f"--{name}-source", type=Path, help="use an existing source tree")
+    parser.add_argument("--work-dir", type=Path, default=ROOT / ".crossfhe")
+    for name in ("native-build", "openfhe-build", "openfhe-prefix", "phantom-build", "toolchain"):
+        parser.add_argument(f"--{name}", type=Path)
+    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--with-phantom", action="store_true", help="also build the optional CUDA library")
+    parser.add_argument("--cuda-compiler", type=Path, help="nvcc path; otherwise use PATH")
+    parser.add_argument("--cuda-architectures", default="native", help="CMake CUDA architectures, e.g. 89")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--init-only", action="store_true", help="initialize sources without building")
+    modes.add_argument("--skip-build", action="store_true", help="register existing artifacts without downloading")
+    args = parser.parse_args()
+    if args.jobs < 1:
+        parser.error("--jobs must be positive")
+    sources = {name: (getattr(args, name + "_source") or ROOT / path).resolve()
+               for name, path in SOURCES.items()}
     if not args.skip_build:
-        seal=(args.seal_source or ROOT/"third_party/SEAL").resolve()
-        ofhe=(args.openfhe_source or ROOT/"third_party/OpenFHE").resolve()
-        checkout("https://github.com/microsoft/SEAL.git",PINS["seal"],seal)
-        checkout("https://github.com/openfheorg/openfhe-development.git",PINS["openfhe"],ofhe)
-        checkout("https://github.com/openfheorg/cereal.git",PINS["cereal"],ofhe/"third-party/cereal")
-        common=["-G","Ninja","-DCMAKE_BUILD_TYPE=Release",f"-DCMAKE_MAKE_PROGRAM={ninja}",
-                f"-DCMAKE_C_COMPILER={cc}",f"-DCMAKE_CXX_COMPILER={cxx}"]
-        run([cmake,"-S",ROOT,"-B",native]+common+[
-            f"-DPython3_EXECUTABLE={sys.executable}",f"-DCROSSFHE_LLVM_SOURCE={llvm}",f"-DCROSSFHE_SEAL_SOURCE={seal}",
-            "-DLLVM_BUILD_TOOLS=OFF","-DLLVM_INCLUDE_UTILS=OFF","-DLLVM_BUILD_UTILS=OFF",
-            "-DMLIR_INCLUDE_TESTS=OFF","-DMLIR_INCLUDE_INTEGRATION_TESTS=OFF","-DLLVM_PARALLEL_LINK_JOBS=1"],env)
-        run([cmake,"--build",native,"--target","crossfhe-opt","crossfhe-translate","seal","--parallel",str(args.jobs)],env)
-        openfhe_build=(args.openfhe_build or work/"openfhe-build").resolve()
-        extra=["-DBUILD_STATIC=ON","-DBUILD_SHARED=OFF","-DBUILD_UNITTESTS=OFF","-DBUILD_EXAMPLES=OFF",
-               "-DBUILD_BENCHMARKS=OFF","-DWITH_OPENMP=OFF","-DGIT_SUBMOD_AUTO=OFF",f"-DCMAKE_INSTALL_PREFIX={prefix}"]
-        if os.name=="nt":
-            extra += ["-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -Wno-error -include cstdlib",
-                      "-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG -Wno-error"]
-        run([cmake,"-S",ofhe,"-B",openfhe_build]+common+extra,env)
-        run([cmake,"--build",openfhe_build,"--target","OPENFHEpke_static","OPENFHEbinfhe_static","OPENFHEcore_static","--parallel",str(args.jobs)],env)
-        run([cmake,"--install",openfhe_build],env)
-    openfhe_config=prefix/("CMake" if os.name=="nt" else "lib/OpenFHE")
-    seal_config=native/"seal/cmake"
-    for file in (native/"bin"/("crossfhe-opt"+suffix),native/"bin"/("crossfhe-translate"+suffix),
-                 seal_config/"SEALConfig.cmake",openfhe_config/"OpenFHEConfig.cmake",cxx,cmake,ninja):
-        if not file.is_file(): raise RuntimeError(f"required artifact missing: {file}")
-    config={"native_build":str(native),"seal_dir":str(seal_config),"openfhe_dir":str(openfhe_config),
-            "cxx":str(cxx),"cc":str(cc),"cmake":str(cmake),"ninja":str(ninja),"revisions":PINS}
-    destination=ROOT/".crossfhe/toolchain.json"; destination.parent.mkdir(exist_ok=True)
-    destination.write_text(json.dumps(config,indent=2)+"\n",encoding="utf-8")
+        initialize(args, sources)
+    if args.init_only:
+        return
+
+    work = args.work_dir.resolve()
+    native = (args.native_build or ROOT / "build").resolve()
+    openfhe_build = (args.openfhe_build or work / "openfhe-build").resolve()
+    prefix = (args.openfhe_prefix or work / "openfhe-install").resolve()
+    phantom_build = (args.phantom_build or work / "phantom-build").resolve()
+    suffix = ".exe" if os.name == "nt" else ""
+    cc = tool(args.toolchain / ("clang" + suffix) if args.toolchain else
+              os.environ.get("CC", "clang" if shutil.which("clang") else "gcc"))
+    cxx = tool(args.toolchain / ("clang++" + suffix) if args.toolchain else
+               os.environ.get("CXX", "clang++" if shutil.which("clang++") else "g++"))
+    cmake, ninja = tool("cmake"), tool("ninja")
+    common = ["-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_MAKE_PROGRAM={ninja}",
+              f"-DCMAKE_C_COMPILER={cc}", f"-DCMAKE_CXX_COMPILER={cxx}"]
+    if not args.skip_build:
+        run(cmake, "-S", ROOT, "-B", native, *common,
+            f"-DPython3_EXECUTABLE={sys.executable}", f"-DCROSSFHE_LLVM_SOURCE={sources['llvm']}",
+            f"-DCROSSFHE_SEAL_SOURCE={sources['seal']}", "-DLLVM_BUILD_TOOLS=OFF",
+            "-DLLVM_INCLUDE_UTILS=OFF", "-DLLVM_BUILD_UTILS=OFF", "-DMLIR_INCLUDE_TESTS=OFF",
+            "-DMLIR_INCLUDE_INTEGRATION_TESTS=OFF", "-DLLVM_PARALLEL_LINK_JOBS=1")
+        run(cmake, "--build", native, "--target", "crossfhe-opt", "crossfhe-translate", "seal",
+            "--parallel", args.jobs)
+        windows = (["-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -Wno-error -include cstdlib",
+                    "-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG -Wno-error"] if os.name == "nt" else [])
+        run(cmake, "-S", sources["openfhe"], "-B", openfhe_build, *common, *windows,
+            "-DBUILD_STATIC=ON", "-DBUILD_SHARED=OFF", "-DBUILD_UNITTESTS=OFF", "-DBUILD_EXAMPLES=OFF",
+            "-DBUILD_BENCHMARKS=OFF", "-DWITH_OPENMP=OFF", "-DGIT_SUBMOD_AUTO=OFF",
+            f"-DCMAKE_INSTALL_PREFIX={prefix}")
+        run(cmake, "--build", openfhe_build, "--target", "OPENFHEpke_static", "OPENFHEbinfhe_static",
+            "OPENFHEcore_static", "--parallel", args.jobs)
+        run(cmake, "--install", openfhe_build)
+
+    cuda = tool(args.cuda_compiler or "nvcc") if args.with_phantom else None
+    if args.with_phantom and (sources["phantom"] / ".git").exists():
+        revision = git(sources["phantom"], "rev-parse", "HEAD")
+        if revision != "1f4a198443b3af77118e51f53d5b8f332154b875":
+            raise RuntimeError(f"unsupported Phantom revision: {revision}; use the pinned submodule")
+    if args.with_phantom and not args.skip_build:
+        run(cmake, "-S", sources["phantom"], "-B", phantom_build, "-G", "Ninja",
+            "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_MAKE_PROGRAM={ninja}",
+            f"-DCMAKE_CXX_COMPILER={cxx}", f"-DCMAKE_CUDA_COMPILER={cuda}",
+            f"-DCMAKE_CUDA_HOST_COMPILER={cxx}",
+            f"-DCMAKE_CUDA_ARCHITECTURES={args.cuda_architectures}", "-DPHANTOM_ENABLE_EXAMPLE=OFF",
+            "-DPHANTOM_ENABLE_BENCH=OFF", "-DPHANTOM_ENABLE_TEST=OFF", "-DPHANTOM_ENABLE_PYTHON_BINDING=OFF")
+        run(cmake, "--build", phantom_build, "--target", "Phantom", "--parallel", args.jobs)
+
+    config = {"native_build": str(native), "seal_dir": str(native / "seal/cmake"),
+              "openfhe_dir": str(prefix / ("CMake" if os.name == "nt" else "lib/OpenFHE")),
+              "openfhe_build": str(openfhe_build),
+              "cc": cc, "cxx": cxx, "cmake": cmake, "ninja": ninja,
+              "sources": {name: str(path) for name, path in sources.items()}}
+    tracked = {**sources, "cereal": sources["openfhe"] / "third-party/cereal"}
+    config["revisions"] = {name: git(path, "rev-parse", "HEAD") if (path / ".git").exists() else "unknown"
+                           for name, path in tracked.items()}
+    required = [native / "bin" / (name + suffix) for name in ("crossfhe-opt", "crossfhe-translate")]
+    required += [Path(config["seal_dir"]) / "SEALConfig.cmake",
+                 Path(config["openfhe_dir"]) / "OpenFHEConfig.cmake"]
+    if args.with_phantom:
+        libraries = [phantom_build / path for path in ("lib/libPhantom.so", "lib/libPhantom.dylib",
+                     "bin/Phantom.dll", "lib/Phantom.dll", "Phantom.dll")]
+        library = next((path for path in libraries if path.is_file()), libraries[0])
+        required.append(library)
+        config.update(phantom_source=str(sources["phantom"]), phantom_build=str(phantom_build),
+                      phantom_library=str(library), cuda_compiler=str(cuda) if cuda else None,
+                      cuda_architectures=args.cuda_architectures)
+    for path in required:
+        if not path.is_file():
+            raise RuntimeError(f"required artifact missing: {path}")
+    destination = ROOT / ".crossfhe/toolchain.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
     print(f"Ready: {destination}")
 
 
-if __name__=="__main__":
-    try: main()
-    except (RuntimeError,OSError,subprocess.CalledProcessError) as error:
-        print(f"bootstrap failed: {error}",file=sys.stderr); raise SystemExit(1)
+if __name__ == "__main__":
+    try:
+        main()
+    except (RuntimeError, OSError, subprocess.CalledProcessError) as error:
+        print(f"bootstrap failed: {error}", file=sys.stderr)
+        raise SystemExit(1)

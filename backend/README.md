@@ -8,10 +8,11 @@
 | --- | --- | --- |
 | `seal/` | `seal-ckks` | Microsoft SEAL 4.1.2，CKKS 算术及必要的 rescale、level alignment、relinearization |
 | `openfhe/` | `openfhe-cross` | OpenFHE 1.4.2，CKKS 算术、CKKS/FHEW 转换、sign bootstrapping、掩码选择 |
+| `phantom/` | `phantom-ckks` | 可选 PhantomFHE 2.1 CUDA CKKS 算术与周期布局 MatVec，实验性后端 |
 
-每个目录包含 runtime header、`runner.cpp` 和 `CMakeLists.txt`。密码库完整源码属于外部依赖，由根 `scripts/bootstrap.py` 按 revision 获取到 `third_party/`，或者通过参数引用已有源码。
+每个目录包含 runtime header、runner 源文件（CPU 为 `.cpp`，Phantom 为 `.cu`）和 `CMakeLists.txt`。密码库完整源码属于外部依赖，由根 `scripts/bootstrap.py` 按 revision 获取到 `third_party/`，或者通过参数引用已有源码。
 
-两套库的密文类型不同。跨方案链路完整地在 OpenFHE 中执行；本版不将 SEAL 密文直接传给 FHEW/TFHEpp。新增 TFHEpp 后端须实现自己的转换键和数值编码。
+各库的密文类型不同。跨方案链路完整地在 OpenFHE 中执行；本版不将 SEAL 或 Phantom 密文直接传给 FHEW/TFHEpp。新增 TFHEpp 后端须实现自己的转换键和数值编码。
 
 ## 执行接口
 
@@ -43,11 +44,11 @@ OpenFHE 使用 `-DCROSSFHE_BACKEND=openfhe-cross` 和 `-DOpenFHE_DIR=...`。通�
 
 先在根目录运行 bootstrap，然后：
 
-```powershell
-python -m pytest tests\backend --run-fhe -q --basetemp .crossfhe\test-backend
-python -m pytest tests\e2e --run-fhe -q -k openfhe --basetemp .crossfhe\test-switching
+```bash
+python scripts/run_tests.py --suite cpu
+python scripts/run_tests.py --suite gpu
 ```
 
-第一组验证 SEAL 上的秘密矩阵乘、分组/空洞卷积、公开输出与零乘法。第二组验证 OpenFHE 的算术、ReLU、ReLU-MLP、MaxPool 与转换调用计数。默认安全配置须另外运行 demo 测量；回归测试的 OpenFHE 使用显式 `INSECURE_TOY`。
+CPU 套件更新 SEAL 和 OpenFHE（含安装），验证秘密矩阵乘、分组/空洞卷积、公开输出与零乘法，以及 OpenFHE 算术、ReLU、ReLU-MLP、MaxPool 和转换调用计数。GPU 套件更新 Phantom，要求已完成 `--with-phantom` 配置。底层 pytest 可通过 `--run-fhe -m seal`、`--run-fhe -m openfhe` 或 `--run-fhe --run-gpu -m gpu` 分别选择后端；底层命令需要先自行构建。默认安全配置须另外运行 demo 测量；回归测试的 OpenFHE 使用显式 `INSECURE_TOY`。详见 [测试说明](../tests/README.md)。
 
-数值范围、精度、安全参数、评估键和转换延迟的完整契约见 [BACKENDS.md](../docs/BACKENDS.md)。GPU 后端留待后续实现。
+数值范围、精度、安全参数、评估键和转换延迟的完整契约见 [BACKENDS.md](../docs/BACKENDS.md)。Phantom 的依赖、四阶段执行、数值约定与 GPU 测试见 [Phantom 后端](../docs/PHANTOM_BACKEND.md)。

@@ -6,6 +6,10 @@
 
 The scale reset to `2^40` follows the selected near-power-of-two primes; it introduces approximation error. No compiler noise bound is implemented. The decrypted result must be validated at the application's precision target.
 
+## Phantom CUDA CKKS (experimental)
+
+`phantom-ckks` implements scalar CKKS arithmetic and periodic packed MatVec on NVIDIA GPUs using the pinned PhantomFHE 2.1 library. It uses scale `2^40`, one special modulus, and the same coefficient-bit planning and tc128 table bound as SEAL, with dimensions capped at 32768. It rejects logic/switching, and does not implement bootstrapping. The four runner phases use separate processes and keep the secret key in the client directory. The runtime synchronizes CUDA around evaluator timing. Artifact formats are specific to Phantom and assume trusted local files. See [build instructions and detailed contracts](PHANTOM_BACKEND.md).
+
 ## OpenFHE CKKS/FHEW
 
 `openfhe-cross` executes CKKS arithmetic and a cross-scheme sign circuit. It uses FLEXIBLEAUTO CKKS, 50-bit scaling moduli, a 60-bit first modulus, HYBRID key switching and one logical slot per ciphertext. The compiler reserves 17 switching levels in addition to the source arithmetic depth. This conservative budget is not an optimized bootstrap plan; deeper networks may need new resource planning and CKKS refresh support.

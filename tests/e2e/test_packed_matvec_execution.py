@@ -9,7 +9,7 @@ import pytest
 from crossfhe.pipeline import compile_onnx, compile_torch, run_encrypted
 
 
-pytestmark = pytest.mark.fhe
+pytestmark = [pytest.mark.fhe, pytest.mark.native, pytest.mark.seal]
 
 
 def make_model(path, matrix, bias, *, side="left", column=False):
@@ -157,6 +157,7 @@ def test_sparse_and_zero_matrices(tmp_path, zero, bias_enabled):
     assert result["resources"]["materializations"] == (1 if zero else 0)
 
 
+@pytest.mark.torch
 def test_torch_linear_gemm_export(tmp_path):
     import torch
     torch.manual_seed(217)

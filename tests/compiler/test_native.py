@@ -2,16 +2,11 @@ import os
 from pathlib import Path
 
 import pytest
-from crossfhe.pipeline import compile_torch,command,read_config,run_encrypted,export_torch
+from crossfhe.pipeline import compile_onnx,compile_torch,command,run_encrypted,export_torch
 from crossfhe.demos import make_demo
 
 
-@pytest.fixture(scope="module")
-def config():
-    try: return read_config()
-    except RuntimeError: pytest.skip("native compiler not bootstrapped")
-
-
+@pytest.mark.native
 def test_real_registered_dialects(config):
     suffix=".exe" if os.name=="nt" else ""
     tool=Path(config["native_build"])/"bin"/("crossfhe-opt"+suffix)
@@ -19,12 +14,15 @@ def test_real_registered_dialects(config):
     assert "heir" in text and "scfhe" in text and "arith" in text
 
 
+@pytest.mark.native
+@pytest.mark.torch
 def test_seal_rejects_logic_before_execution(tmp_path,config):
     model,inputs=make_demo("relu")
     with pytest.raises(ValueError,match="model needs logic FHE"):
         compile_torch(model,inputs,tmp_path/"artifact",config=config,backend="seal-ckks")
 
 
+@pytest.mark.native
 def test_native_invalid_mlir_is_rejected(tmp_path,config):
     suffix=".exe" if os.name=="nt" else ""
     tool=Path(config["native_build"])/"bin"/("crossfhe-opt"+suffix)
@@ -36,8 +34,10 @@ def test_native_invalid_mlir_is_rejected(tmp_path,config):
 
 @pytest.mark.parametrize("backend,diagnostic",[
     ("seal-ckks","SEAL has no logic FHE"),
+    ("phantom-ckks","Phantom has no public logic FHE"),
     ("cuda","unsupported backend"),
 ])
+@pytest.mark.native
 def test_standalone_codegen_rejects_incompatible_backend(tmp_path,config,backend,diagnostic):
     suffix=".exe" if os.name=="nt" else ""
     tools=Path(config["native_build"])/"bin"
@@ -52,12 +52,21 @@ def test_standalone_codegen_rejects_incompatible_backend(tmp_path,config,backend
     assert not header.exists()
 
 
+@pytest.mark.native
 def test_incomplete_artifact_cannot_run(tmp_path,config):
     with pytest.raises(RuntimeError,match="artifact is not ready"):
         run_encrypted(tmp_path,{},config=config)
 
 
+@pytest.mark.native
+def test_phantom_requires_optional_configuration(tmp_path,config):
+    cpu_config = {k:v for k,v in config.items() if not k.startswith("phantom_")}
+    with pytest.raises(ValueError,match="bootstrap.py --with-phantom"):
+        compile_onnx("unused.onnx",tmp_path/"model",config=cpu_config,backend="phantom-ckks")
+
+
 @pytest.mark.parametrize("mode",["branch","item"])
+@pytest.mark.torch
 def test_data_dependent_python_trace_is_rejected(tmp_path,mode):
     import torch
     from torch import nn

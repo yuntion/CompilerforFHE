@@ -14,7 +14,7 @@
 在仓库根目录执行以下 Ubuntu/Bash 命令：
 
 ```bash
-source .venv/bin/activate
+conda activate CompilerforFHE
 cmake --build build --target crossfhe-opt crossfhe-translate --parallel 4
 build/bin/crossfhe-opt --show-dialects
 build/bin/crossfhe-opt --help

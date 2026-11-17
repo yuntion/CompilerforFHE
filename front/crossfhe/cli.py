@@ -17,11 +17,11 @@ def main(argv=None):
         command=commands.add_parser(name)
         command.add_argument("model",choices=DEMOS if name=="demo" else None)
         command.add_argument("--output",type=Path,required=True)
-        command.add_argument("--backend",choices=("openfhe-cross","seal-ckks"),default="openfhe-cross")
+        command.add_argument("--backend",choices=("openfhe-cross","seal-ckks","phantom-ckks"),default="openfhe-cross")
         command.add_argument("--max-operations",type=int,default=50000)
         command.add_argument("--optimization",choices=("none","scalar","depth"),default="scalar")
         command.add_argument("--packing",choices=("none","diagonal","bsgs","auto"),default="none",
-                             help="Explicit CPU CKKS SIMD path for a single public affine MatVec (SEAL)")
+                             help="CKKS SIMD path for a single public affine MatVec (SEAL or Phantom)")
         command.add_argument("--relu-bound",type=float,help="Declared absolute bound on every approximated ReLU input")
         command.add_argument("--relu-max-error",type=float,help="Accepted local polynomial approximation error")
         if name=="demo": _run_options(command)

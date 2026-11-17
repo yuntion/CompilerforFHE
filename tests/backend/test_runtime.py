@@ -1,7 +1,7 @@
 import pytest
 from crossfhe.pipeline import compile_torch, run_encrypted
 
-pytestmark = pytest.mark.fhe
+pytestmark = [pytest.mark.fhe, pytest.mark.native, pytest.mark.seal, pytest.mark.torch]
 
 
 def test_grouped_dilated_conv_and_batchnorm_match_pytorch(tmp_path):

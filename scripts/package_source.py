@@ -5,7 +5,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 DIRECTORIES={"compiler","front","backend","tools","scripts","tests","docs","examples","build-tools"}
-ROOT_FILES={"README.md","CMakeLists.txt","pyproject.toml","requirements.txt",".gitignore",
+ROOT_FILES={"README.md","TESTING_REPAIR_PLAN.md","TEST_GENERATION_RULES.md","CMakeLists.txt","pyproject.toml","requirements.txt",".gitignore",
             ".gitmodules","third_party/README.md"}
 EXCLUDED={"__pycache__",".pytest_cache",".venv",".crossfhe","build","artifacts",".git"}
 

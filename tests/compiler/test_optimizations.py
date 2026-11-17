@@ -3,12 +3,10 @@ import json
 from pathlib import Path
 
 import pytest
-from crossfhe.pipeline import command, read_config
+from crossfhe.pipeline import command
 
 
-@pytest.fixture(scope="module")
-def config():
-    return read_config()
+pytestmark = pytest.mark.native
 
 
 def lower(tmp_path, config, body, *, args="%x: f64, %y: f64", outputs="f64", flags=(), attrs=""):

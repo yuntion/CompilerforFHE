@@ -47,16 +47,15 @@ arith.cmpf / arith.select
 
 ## 编译器测试
 
-在仓库根目录构建工具，然后执行：
+在仓库根目录完成首次 bootstrap 后，使用统一入口更新工具并执行 CTest / 编译器 Python 测试：
 
 ```text
-cmake --build build --target crossfhe-opt crossfhe-translate --parallel 4
-ctest --test-dir build --output-on-failure
-python -m pytest tests/compiler -q --basetemp .crossfhe/test-compiler
+python scripts/run_tests.py --suite compiler
+python scripts/run_tests.py --suite compiler -- -k matvec
 ```
 
-CTest 独立检查方言注册、MLIR 降级和 C++ 生成。Python 原生测试检查 malformed IR、后端拒绝、未完成编译产物和导出安全条件。端到端测试进一步编译生成代码并执行真实密文运算。
+CTest 独立检查方言注册、MLIR 降级和 C++ 生成。Python 原生测试检查 malformed IR、后端拒绝、未完成编译产物和导出安全条件。端到端测试进一步编译生成代码并执行真实密文运算。直接使用 `python -m pytest tests/compiler` 不会更新二进制，且所选原生用例缺少工具链时统一报错。筛选无原生依赖的测试可用 `-m 'not native and not torch'`。详见 [测试说明](../tests/README.md)。
 
 原仓库的 CPU/GPU、TOSA 和旧 NISL 工具代码保留为可选旧路径，默认 FHE 构建不启用它们。
 
-`--ppml-fhe-matvec='strategy=diagonal|bsgs|auto'` 将 `heir.matvec` 降为显式打包原语，接入 SEAL CPU CKKS 后端。此 pass 使用独立的周期槽位布局和经过 verifier 检查的公开矩阵属性，详见 [研究与实现报告](../docs/development/MATVEC.md)。
+`--ppml-fhe-matvec='strategy=diagonal|bsgs|auto'` 将 `heir.matvec` 降为显式打包原语，接入 SEAL CPU CKKS 或可选的 Phantom CUDA CKKS 后端。此 pass 使用独立的周期槽位布局和经过 verifier 检查的公开矩阵属性，详见 [研究与实现报告](../docs/development/MATVEC.md) 和 [Phantom 后端](../docs/PHANTOM_BACKEND.md)。

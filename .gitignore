@@ -10,5 +10,5 @@ __pycache__/
 CrossFHE-source*.zip
 articles
 
-docs/development
+docs/development/validation
 docs/validation

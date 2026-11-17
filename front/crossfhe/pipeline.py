@@ -56,14 +56,18 @@ def _native(config, name):
 def compile_onnx(model_path, output, *, config=None, backend="openfhe-cross", max_operations=50000,
                  optimization="scalar", relu_bound=None, relu_max_error=None, packing="none"):
     config = config or read_config()
-    if backend not in ("openfhe-cross","seal-ckks"):
-        raise ValueError("implemented backends: openfhe-cross, seal-ckks; GPU codegen is reserved")
+    if backend not in ("openfhe-cross","seal-ckks","phantom-ckks"):
+        raise ValueError("implemented backends: openfhe-cross, seal-ckks, phantom-ckks")
+    if backend=="phantom-ckks":
+        for name in ("phantom_source", "phantom_library", "cuda_compiler"):
+            if not config.get(name):
+                raise ValueError("phantom-ckks is not configured; run scripts/bootstrap.py --with-phantom")
     if optimization not in ("none", "scalar", "depth"):
         raise ValueError("optimization must be none, scalar or depth")
     if packing not in ("none", "diagonal", "bsgs", "auto"):
         raise ValueError("packing must be none, diagonal, bsgs or auto")
-    if packing!="none" and (backend!="seal-ckks" or relu_bound is not None or relu_max_error is not None):
-        raise ValueError("packed MatVec currently requires seal-ckks and no ReLU approximation")
+    if packing!="none" and (backend not in ("seal-ckks","phantom-ckks") or relu_bound is not None or relu_max_error is not None):
+        raise ValueError("packed MatVec currently requires seal-ckks or phantom-ckks and no ReLU approximation")
     if (relu_bound is None) != (relu_max_error is None):
         raise ValueError("ReLU approximation requires both relu_bound and relu_max_error")
     if relu_bound is not None and (not np.isfinite([relu_bound, relu_max_error]).all()
@@ -104,8 +108,8 @@ def compile_onnx(model_path, output, *, config=None, backend="openfhe-cross", ma
         _,times[f"contract_{name}"] = command([translate,output/stage,f"--backend={backend if packing!='none' else 'openfhe-cross'}",
             "--emit-contract","-o",path],config,log=logs/f"contract_{name}.log")
         contracts[name]=json.loads(path.read_text())
-    if contracts["after"]["logic_comparisons"] and backend=="seal-ckks":
-        raise FrontendError("model needs logic FHE; Microsoft SEAL supports CKKS only; choose openfhe-cross")
+    if contracts["after"]["logic_comparisons"] and backend!="openfhe-cross":
+        raise FrontendError("model needs logic FHE; selected backend supports CKKS only; choose openfhe-cross")
     _,times["codegen"] = command([translate,output/"04_optimized.mlir",f"--backend={backend}",
         "-o",output/"model.hpp"],config,log=logs/"codegen.log")
     build = output/"build"
@@ -113,7 +117,14 @@ def compile_onnx(model_path, output, *, config=None, backend="openfhe-cross", ma
             "-DCMAKE_BUILD_TYPE=Release",f"-DCMAKE_MAKE_PROGRAM={config['ninja']}",
             f"-DCMAKE_CXX_COMPILER={config['cxx']}", f"-DCROSSFHE_BACKEND={backend}",
             f"-DCROSSFHE_MODEL_HEADER={(output/'model.hpp').as_posix()}"]
-    args.append(f"-DSEAL_DIR={config['seal_dir']}" if backend=="seal-ckks" else f"-DOpenFHE_DIR={config['openfhe_dir']}")
+    if backend=="phantom-ckks":
+        args += [f"-DCROSSFHE_PHANTOM_SOURCE={config['phantom_source']}",
+                 f"-DCROSSFHE_PHANTOM_LIBRARY={config['phantom_library']}",
+                 f"-DCMAKE_CUDA_COMPILER={config['cuda_compiler']}",
+                 f"-DCMAKE_CUDA_HOST_COMPILER={config['cxx']}",
+                 f"-DCMAKE_CUDA_ARCHITECTURES={config.get('cuda_architectures','native')}"]
+    else:
+        args.append(f"-DSEAL_DIR={config['seal_dir']}" if backend=="seal-ckks" else f"-DOpenFHE_DIR={config['openfhe_dir']}")
     _,times["configure"] = command(args,config,log=logs/"configure.log")
     _,times["cxx_build"] = command([config["cmake"],"--build",build,"--target","model-runner","--parallel","2"],config,log=logs/"build.log")
     manifest.update({"schema_version":1,"backend":backend,"compile_seconds":times,
@@ -195,7 +206,7 @@ def run_encrypted(artifact, inputs, *, reference=None, config=None, insecure_dem
         if hashlib.sha256((artifact/name).read_bytes()).hexdigest()!=digest:
             raise RuntimeError(f"compiled artifact changed: {name}; compile again")
     if insecure_demo and manifest["backend"]!="openfhe-cross":
-        raise ValueError("--insecure-demo applies only to OpenFHE; SEAL always uses tc128")
+        raise ValueError("--insecure-demo applies only to OpenFHE; CKKS-only backends always use tc128")
     if not np.isfinite(comparison_scale) or comparison_scale<=0:
         raise ValueError("comparison scale must be finite and positive")
     if min(atol,rtol)<0 or not np.isfinite([atol,rtol]).all(): raise ValueError("invalid tolerances")
@@ -240,7 +251,7 @@ def run_encrypted(artifact, inputs, *, reference=None, config=None, insecure_dem
               "server_has_no_secret_key":secret_free,"run_directory":str(run),
               "ciphertext_input_bytes":(server/"input.ct").stat().st_size,
               "ciphertext_output_bytes":(server/"output.ct").stat().st_size,
-              "evaluation_bundle_bytes":sum(f.stat().st_size for f in server.iterdir() if f.is_file() and f.suffix in (".bin",".seal"))}
+              "evaluation_bundle_bytes":sum(f.stat().st_size for f in server.iterdir() if f.is_file() and f.suffix in (".bin",".seal",".phantom"))}
     if reference is not None:
         if set(reference)!=set(outputs): raise ValueError("reference output names differ")
         errors = {}

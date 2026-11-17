@@ -13,7 +13,7 @@
 using namespace mlir;
 LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
                                    llvm::raw_ostream &output) {
-  if (backend != "seal-ckks" && backend != "openfhe-cross") {
+  if (backend != "seal-ckks" && backend != "openfhe-cross" && backend != "phantom-ckks") {
     module.emitError("unsupported backend"); return failure();
   }
   if (failed(verify(module))) return failure();
@@ -38,8 +38,10 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
       openfheDepth.getInt()<depth.getInt() || openfheDepth.getInt()>128) {
     function.emitError("invalid depth/scheme contract"); return failure();
   }
-  if (backend == "seal-ckks" && logic.getInt()) {
-    function.emitError("SEAL has no logic FHE or scheme switching; use openfhe-cross"); return failure();
+  if (backend != "openfhe-cross" && logic.getInt()) {
+    function.emitError(backend == "seal-ckks"
+        ? "SEAL has no logic FHE or scheme switching; use openfhe-cross"
+        : "Phantom has no public logic FHE or scheme switching; use openfhe-cross"); return failure();
   }
   for (Type type : function.getFunctionType().getInputs())
     if (!isa<heir::RLWECipherType>(type)) { function.emitError("expected RLWE inputs"); return failure(); }
@@ -55,8 +57,8 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
   if (packed) {
     auto in=function->getAttrOfType<IntegerAttr>("ppml.input_elements");
     auto out=function->getAttrOfType<IntegerAttr>("ppml.output_elements");
-    if (backend!="seal-ckks" || function.getNumArguments()!=1 || function.getNumResults()!=1 || logic.getInt()) {
-      function.emitError("periodic packed evaluators require seal-ckks, one input/output ciphertext and no logic"); return failure();
+    if (backend=="openfhe-cross" || function.getNumArguments()!=1 || function.getNumResults()!=1 || logic.getInt()) {
+      function.emitError("periodic packed evaluators require seal-ckks or phantom-ckks, one input/output ciphertext and no logic"); return failure();
     }
     auto type=cast<heir::RLWECipherType>(function.getArgument(0).getType());
     int size=type.getSize();
@@ -98,11 +100,12 @@ LogicalResult crossfhe::generateCpp(ModuleOp module, llvm::StringRef backend,
     function.emitError("packed depth contract is stale; refresh it before codegen"); return failure();
   }
   std::ostringstream code;
-  code << "#pragma once\n#include \"" << (backend == "seal-ckks" ? "seal_runtime.hpp" : "openfhe_runtime.hpp")
+  code << "#pragma once\n#include \"" << (backend == "seal-ckks" ? "seal_runtime.hpp" :
+                                         backend == "phantom-ckks" ? "phantom_runtime.hpp" : "openfhe_runtime.hpp")
        << "\"\n#include <vector>\nnamespace crossfhe_generated {\n";
   code << "inline constexpr std::size_t input_count = " << function.getNumArguments() << ";\n";
   code << "inline constexpr std::size_t output_count = " << function.getNumResults() << ";\n";
-  if (backend=="seal-ckks") {
+  if (backend!="openfhe-cross") {
     code << "inline constexpr std::size_t packed_period = " << period << ";\n";
     code << "inline constexpr std::size_t input_value_count = " << inputElements << ";\n";
     code << "inline constexpr std::size_t output_value_count = " << outputElements << ";\n";

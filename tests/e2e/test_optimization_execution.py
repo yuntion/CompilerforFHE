@@ -6,9 +6,10 @@ import numpy as np
 import pytest
 from crossfhe.pipeline import compile_torch, compile_onnx, run_encrypted
 
-pytestmark=pytest.mark.fhe
+pytestmark = [pytest.mark.fhe, pytest.mark.native, pytest.mark.torch]
 
 
+@pytest.mark.seal
 def test_cse_reduces_cipher_multiplications_without_changing_outputs(tmp_path):
     import torch
     from torch import nn
@@ -39,6 +40,7 @@ def test_cse_reduces_cipher_multiplications_without_changing_outputs(tmp_path):
     np.testing.assert_allclose(records["none"][1]["output_0"],records["scalar"][1]["output_0"],atol=0.001,rtol=0.001)
 
 
+@pytest.mark.seal
 def test_reassociation_reduces_levels_with_real_ckks(tmp_path):
     import torch
     from torch import nn
@@ -57,6 +59,7 @@ def test_reassociation_reduces_levels_with_real_ckks(tmp_path):
     assert depths==[7,3]
 
 
+@pytest.mark.seal
 def test_approximate_relu_runs_on_seal_with_the_declared_local_budget(tmp_path):
     import torch
     from torch import nn
@@ -74,6 +77,7 @@ def test_approximate_relu_runs_on_seal_with_the_declared_local_budget(tmp_path):
     np.testing.assert_allclose(outputs["output_0"],x.numpy()/2+x.numpy()**2/2+1/16,atol=0.0001,rtol=0)
 
 
+@pytest.mark.openfhe
 def test_repeated_relu_masks_are_shared_in_real_openfhe(tmp_path):
     import torch
     from torch import nn

@@ -20,5 +20,14 @@ crossfhe = "crossfhe.cli:main"
 where = ["front"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/front", "tests/compiler", "tests/backend", "tests/e2e"]
-markers = ["fhe: real native compilation and encrypted execution"]
+testpaths = ["tests/front", "tests/compiler", "tests/backend", "tests/e2e", "tests/scripts"]
+pythonpath = ["front", "."]
+addopts = "--strict-markers"
+markers = [
+    "fhe: real native compilation and encrypted execution",
+    "gpu: requires the optional Phantom CUDA backend",
+    "native: requires the native CrossFHE compiler tools",
+    "torch: requires PyTorch export or reference execution",
+    "seal: requires the SEAL CKKS backend",
+    "openfhe: requires the OpenFHE cross-scheme backend",
+]

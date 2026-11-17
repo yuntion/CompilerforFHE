@@ -33,7 +33,7 @@ static LogicalResult inferBinary(ValueRange values, SmallVectorImpl<Type> &types
 
 #define INFER_BINARY(CLASS) \
 LogicalResult CLASS::inferReturnTypes(MLIRContext *, std::optional<Location>, \
-    ValueRange operands, DictionaryAttr, RegionRange, \
+    ValueRange operands, DictionaryAttr, OpaqueProperties, RegionRange, \
     SmallVectorImpl<Type> &types) { return inferBinary(operands, types); }
 INFER_BINARY(SCFHEAddOp)
 INFER_BINARY(SCFHESubOp)
@@ -41,7 +41,7 @@ INFER_BINARY(SCFHEMultOp)
 INFER_BINARY(SCFHEDivOp)
 #undef INFER_BINARY
 LogicalResult SCFHEDecryptOp::inferReturnTypes(MLIRContext *,
-    std::optional<Location>, ValueRange operands, DictionaryAttr,
+    std::optional<Location>, ValueRange operands, DictionaryAttr, OpaqueProperties,
     RegionRange, SmallVectorImpl<Type> &types) {
   auto input = dyn_cast<SCFHECipherType>(operands[0].getType());
   if (!input) return failure();

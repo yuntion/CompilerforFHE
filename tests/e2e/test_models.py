@@ -4,18 +4,22 @@ from pathlib import Path
 import numpy as np
 import pytest
 from crossfhe.demos import make_demo
-from crossfhe.pipeline import compile_torch,read_config,run_encrypted,command,environment
+from crossfhe.pipeline import compile_torch,run_encrypted,command,environment
 
-pytestmark=pytest.mark.fhe
+pytestmark = [pytest.mark.fhe, pytest.mark.native, pytest.mark.torch]
 
 
 @pytest.mark.parametrize("name,backend",[
-    ("affine","seal-ckks"),("square-mlp","seal-ckks"),("tiny-cnn","seal-ckks"),
-    ("poly-attention","seal-ckks"),("affine","openfhe-cross"),
-    ("relu","openfhe-cross"),("relu-mlp","openfhe-cross"),("maxpool","openfhe-cross"),
+    pytest.param("affine", "seal-ckks", marks=pytest.mark.seal),
+    pytest.param("square-mlp", "seal-ckks", marks=pytest.mark.seal),
+    pytest.param("tiny-cnn", "seal-ckks", marks=pytest.mark.seal),
+    pytest.param("poly-attention", "seal-ckks", marks=pytest.mark.seal),
+    pytest.param("affine", "openfhe-cross", marks=pytest.mark.openfhe),
+    pytest.param("relu", "openfhe-cross", marks=pytest.mark.openfhe),
+    pytest.param("relu-mlp", "openfhe-cross", marks=pytest.mark.openfhe),
+    pytest.param("maxpool", "openfhe-cross", marks=pytest.mark.openfhe),
 ])
-def test_models_match_pytorch_with_actual_fhe(tmp_path,name,backend):
-    config=read_config()
+def test_models_match_pytorch_with_actual_fhe(tmp_path,config,name,backend):
     model,inputs=make_demo(name)
     artifact,arrays,reference=compile_torch(model,inputs,tmp_path/name,config=config,backend=backend)
     _,report=run_encrypted(artifact,arrays,reference=reference,config=config,

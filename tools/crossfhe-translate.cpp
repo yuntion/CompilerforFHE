@@ -14,7 +14,7 @@ static llvm::cl::opt<std::string> inputFile(llvm::cl::Positional,
 static llvm::cl::opt<std::string> outputFile("o",
     llvm::cl::desc("Generated C++ header"), llvm::cl::Required);
 static llvm::cl::opt<std::string> backend("backend",
-    llvm::cl::desc("seal-ckks or openfhe-cross"), llvm::cl::init("openfhe-cross"));
+    llvm::cl::desc("seal-ckks, phantom-ckks or openfhe-cross"), llvm::cl::init("openfhe-cross"));
 static llvm::cl::opt<bool> emitContract("emit-contract",
     llvm::cl::desc("Emit the verified evaluator resource contract as JSON"));
 

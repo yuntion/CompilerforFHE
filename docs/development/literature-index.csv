@@ -1,0 +1,254 @@
+path,pages,characters,sha256,reading_scope
+articles/FHE-CNN/2020-Highly Accurate CNN Inference Using Approximate.pdf,7,51735,1e1aa9a0465a33a531ac41b4e20ceaa845820875c407af9ab52f4e321c654fad,分类索引/相关性筛选
+articles/FHE-CNN/2020-NeurIPS-2020-falcon-fast-spectral-inference-on-encrypted-data-Paper.pdf,11,52270,dfb471f7ce719f4f877c1d2a55ccc4c8a230d384667d36e1a48a64ff2cfdd4b3,分类索引/相关性筛选
+articles/FHE-CNN/2021-A Homomorphic-Encryption-Friendly Privacy-Preserving Mobile.pdf,9,64847,bbc9649ef70f831fcb1439cfe6b067766c0e50f416380597effbbbae147e8e35,分类索引/相关性筛选
+articles/FHE-CNN/2021-Privacy-Preserving Machine Learning.pdf,23,81987,22c70792837c1e3b6fa9290f1c42e9154e80b03936563cd5b3270f7b2372f94e,分类索引/相关性筛选
+articles/FHE-CNN/2022-Low-Complexity Deep Convolutional Neural Networks on Fully.pdf,20,101083,f6c2ce169bbec7a42bc0b64d3e2a9b3b392a32d17be7cf1786a7c6d6d92b3b48,分类索引/相关性筛选
+articles/FHE-CNN/2023- Orchestrating Encoding and Sparsity for Fast Homomorphically.pdf,11,91514,55664a1fa157299b79ab4a77f85f21faca7c27beeaab495907d6e8fd364b20bb,分类索引/相关性筛选
+articles/FHE-CNN/2024-CNN-NoRotation.pdf,14,133593,6dc72da1067506227e924a3f21de3dc0a14d7b566ec6979870efcd3bcd37d0a4,分类索引/相关性筛选
+articles/FHE-CNN/2024-ConvFriendlyCompression.pdf,23,60578,375912d822077e0cf8768d22e7b5722083b39179e42a5144ca1685bc6ec841f1,分类索引/相关性筛选
+articles/FHE-CNN/2024-EncImageCls-LowMem.pdf,24,73650,84775e216c6c634e0f436541fc53e124fab66246e56b1d65bc232b1660bf38d5,分类索引/相关性筛选
+articles/FHE-CNN/2024-HTCNN.pdf,11,110095,e7beff421862c7a011210beef5479e35b1702064d1500c6c1b4f0c45cc6169c1,分类索引/相关性筛选
+articles/FHE-CNN/2024-MOFHEI.pdf,12,101049,b9814461aba364611fbffce009c736709f9b726b5a300aeab7f0f3c7a948c604,分类索引/相关性筛选
+articles/FHE-CNN/2024-PolyApprox-NonPoly.pdf,14,123293,81d47b33582db3c2cb314a1a9ff7c110aff028dc56d71f61af2cad4bba87f4ad,分类索引/相关性筛选
+articles/FHE-CNN/2024-PrivCirNet.pdf,30,133352,3fa94c487dbba7024ed1572df08d0a653ad0a8dc9bb6a4dd805ae2b83c7476ee,分类索引/相关性筛选
+articles/FHE-CNN/2024-UniHENN.pdf,20,157164,ad52ded153d2ab914fa63e822bc5ae94d512d9717a22269b00812fc765bd87d2,分类索引/相关性筛选
+articles/FHE-CNN/2025-ChestXray-Latent.pdf,11,39657,5c2b370ed10ebb6e4c7345e5b602a00ffa2f8f92e07a15d6b95d33f2e50d97b9,分类索引/相关性筛选
+articles/FHE-CNN/2025-FHEON.pdf,14,131105,73956c46da2fbe9dc2da1b17812550b451f7f4ae5b2f122cba010e33edab4733,分类索引/相关性筛选
+articles/FHE-CNN/2025-FastFHE.pdf,19,114075,1a6931842ac33f47d09e0bd079df5ce2355fae3edecc1112fe4bdbce77ce908b,分类索引/相关性筛选
+articles/FHE-CNN/2025-LOHEN.pdf,20,293238,2f45edf1992db65bec9d8f2929af4fde3364bd32d3c86b6be2833b07cfd77100,分类索引/相关性筛选
+articles/FHE-CNN/2025-PAPER.pdf,23,232394,fece7b982f586be1d3e7c0809b387540834d4087a50661a5092eebe7f02240ad,分类索引/相关性筛选
+articles/FHE-CNN/2025-PRISM.pdf,8,54171,80ce31b1118d846d039fe88cc760443fa32be21d57ed24af598a41c976c51602,分类索引/相关性筛选
+articles/FHE-CNN/2025-Peregrine.pdf,8,35289,b3c6a78fbde12a32d2c56bd5d325dd20385137ed6b3b4bc7dbd729c2a9682ac2,分类索引/相关性筛选
+articles/FHE-CNN/2025-PoPETs-PIGEON.pdf,18,140491,9366ab4eb84255658bac419f036ed9144376a35add9eff0190daee9605e124da,分类索引/相关性筛选
+articles/FHE-CNN/2025-PrivSpike.pdf,13,109764,4bc7f63639a306281f0ade149f2661af5fd96632753a8bf778f7d02b0e4d863f,分类索引/相关性筛选
+articles/FHE-CNN/2025-RBOOT.pdf,35,98239,d187c655f3ecc88d6925c76f6608ce7fdcb8715ec09c7433b088c5a19dcc0a42,分类索引/相关性筛选
+articles/FHE-CNN/2026-BootNet.pdf,17,138110,465cc562d4794b8cf52326c12020bc36a9d8b1035ad37bfcc47e2146982dfc9e,分类索引/相关性筛选
+articles/FHE-CNN/2026-CHIP.pdf,13,93871,1777138386c06be6f0f5a5f6021cd65ec08b9aa21f888e6211f0264906da8ab9,分类索引/相关性筛选
+articles/FHE-CNN/2026-FEnc2.pdf,15,169427,09ca31878910b37b00be366460f26583f3a308550344723492d853254eca9b46,分类索引/相关性筛选
+articles/FHE-CNN/2026-Fiona.pdf,22,97180,3e66ca86d481e0d24ce148c033d485be385f767a2d674f949bc753a11a771999,分类索引/相关性筛选
+articles/FHE-CNN/2026-Jaguar.pdf,29,114226,731cb9739e13ecf5456c68125effed5aea0b7727b8160fbcf3a54533d08bd961,分类索引/相关性筛选
+articles/FHE-Compiler/2020-Efficient Homomorphic Computation.pdf,16,121819,80f1171a20b676b412081d5b3d517c42102030cdd8251546cd13e7ffded1ea66,重点候选：编译与优化
+articles/FHE-Compiler/2021-Porcupine-A Synthesizing Compiler.pdf,15,125662,a8d9d7cda62a8a3b480b463d1098693b4814ec1aec371cf086036539f78fa7a2,重点候选：编译与优化
+articles/FHE-Compiler/2021-SoK-Fully Homomorphic Encryption Compilers.pdf,17,143341,727e265ae3bf30401aace734546b53d1103ab21c4fe041a8d749b9951425b955,重点候选：编译与优化
+articles/FHE-Compiler/2023- A Compiler for Vectorizing Encrypted Arithmetic Circuits.pdf,16,130119,5f52b2b8d6d1a5a2dda89681db8736264c92e3d77844bef5d01586db8ed6976b,重点候选：编译与优化
+articles/FHE-Compiler/2023-Error-Latency-Aware Scale Management.pdf,19,144885,8c1ad29a2b8e7f43ed265a55576dc73c0569bf7d354dfd202746579f338b605f,重点候选：编译与优化
+articles/FHE-Compiler/2023-usenixsecurity23-viand.pdf,19,124045,815039e85b3734869fd5262c847b96f757bac47238b66a8271912d7acdda5f1a,重点候选：编译与优化
+articles/FHE-Compiler/2024-CHLOE.pdf,20,134495,bcf62c318e8c738138bafbeac25de6b8114dd4e2c5063c93a228f2dac48426ea,重点候选：编译与优化
+articles/FHE-Compiler/2024-PIB-Compiler.pdf,9,73760,139933c48c911a6bd7ec9744bcab03bb9b8b20b5537dad3338fac717d6765b05,重点候选：编译与优化
+articles/FHE-Compiler/2025-CompileTime-FHE.pdf,18,90866,de68b5218a1d4a45df845795fe2b5ff82dd05cdad9115e37bf0344970c89cb6a,重点候选：编译与优化
+articles/FHE-Compiler/2025-HEIR.pdf,31,85293,b2f8c1f64ff49d8855fbf4f9b952469e0a8477821338bdb360a5dce01aec0894,重点候选：编译与优化
+articles/FHE-Compiler/2025-ILA.pdf,19,185049,1d822f1a5f0b929654641b81ef7464841c70d5a61497735d7762dd4a4a0d5c36,重点候选：编译与优化
+articles/FHE-Compiler/2025-LinearAlgebra-CompilerOpt.pdf,10,83468,bf1b81fa5b6b2cab1118578553526ac2e801ef3464a95e2f35b79ad41d0c3a16,重点候选：编译与优化
+articles/FHE-Compiler/2025-MultiWord-Arith-CodeGen.pdf,17,126717,026af9634e9ed1010970d08c697abfefc3ad5d8e37841ff524ca23344611272c,重点候选：编译与优化
+articles/FHE-Compiler/2025-Parasol.pdf,18,165138,d0ddddef94473d3df96892d3ec75ab0e9e9f34d7ed4d270985d50d8037b4ae4b,重点候选：编译与优化
+articles/FHE-Compiler/2025-TFHE-CircuitSynthesis.pdf,36,123599,c1d0b4e078d6c73253ff90c3d981dd6e397dfe776d52c847bce9f393910c6d0f,重点候选：编译与优化
+articles/FHE-Compiler/2025-TensorCompiler.pdf,20,164877,f0927eb8eb5c7ab6ef3fdb63971d21bca15f252b9b0daa50b20f3cd6f08ea253,重点候选：编译与优化
+articles/FHE-Compiler/2026-BOLT-TFHE-Logic.pdf,14,117047,dbc4ae321f47a7e6f93155fa660b0195c8f2738be1503e18888b41a6a19ad2e5,重点候选：编译与优化
+articles/FHE-Compiler/2026-Ciphertext-Poly-Opt.pdf,4,37615,b180737ce6bc8a52eb29db3c2ef621e7b335739ad7d3a22639fd8bcf7ea39957,重点候选：编译与优化
+articles/FHE-Compiler/2026-KeyMemRT.pdf,14,90838,bebfc8310aba74ca3d5328441558964298cb0f24f04f295cc6c87b2c150423a8,重点候选：编译与优化
+articles/FHE-Compiler/2026-Libra.pdf,20,177029,8859004088b13a2119dff102f0c25fa58eadc48c37dc45684c039c841e1629be,重点候选：编译与优化
+articles/FHE-Compiler/2026-Orbit.pdf,30,195130,ff7b2b6cd01783b5a530dce71d25636181ed22f21cc181253cefbae466932d72,重点候选：编译与优化
+articles/FHE-Compiler/2026-Scytale.pdf,15,43665,401a84763a11073a4157875599c3f61f5560402ba2081dfde56fcec58013ccff,重点候选：编译与优化
+articles/FHE-GPU/2020-Accelerating Number Theoretic Transformations for Bootstrappable.pdf,12,100347,0c2ff7ff7a52f17b1fe0b76c19c3797af658ef51a2af768df4c1976786b3a416,分类索引/相关性筛选
+articles/FHE-GPU/2020-CPU and GPU Accelerated Fully Homomorphic Encryption.pdf,12,92997,98d414b38b8ca346cc6e17d5b78eabccdee7e26126a7681cd3c1f881d3f84842,分类索引/相关性筛选
+articles/FHE-GPU/2021-Over 100x Faster Bootstrapping.pdf,33,138334,4e79a57e21294aada31f6fcc14851e650b18d7f4eea6b01c7fb740174b49f462,分类索引/相关性筛选
+articles/FHE-GPU/2021-Towards the AlexNet Moment for Homomorphic Encryption.pdf,14,103860,8b9775037787f7a2f4bba3d6c1ff823018ded93b12aa357d34dd65da4f5b7c6b,分类索引/相关性筛选
+articles/FHE-GPU/2022-Accelerating Encrypted Computing.pdf,12,169650,d2a361d5d4e58ca1d0f6f05e43d4bcb2a31e0ea285bb22f7043d2bc22c7bbfcd,分类索引/相关性筛选
+articles/FHE-GPU/2023-GME- GPU-based Microarchitectural Extensionspdf.pdf,14,127916,402716dac265c8e2a0528d32c6f0db1e1bc5ba35d1100b2bd3a983cdc19bbdaa,分类索引/相关性筛选
+articles/FHE-GPU/2023-TensorFHE-Achieving Practical Computation.pdf,13,145421,464554cc0edb854e19fd1b93d8ad64864499eb4dbc46fdf395573f959c3ce24b,分类索引/相关性筛选
+articles/FHE-GPU/2024-Cheddar.pdf,15,138887,3f5bd059a30842ca8a828d5291b5b86fa9f9001a8d0e1add5749e88955f41ff0,分类索引/相关性筛选
+articles/FHE-GPU/2024-HEonGPU.pdf,21,98635,2062e19a9483e77a76e37dc380d715216b148a8fcbff9a160893dad1bd92b49a,分类索引/相关性筛选
+articles/FHE-GPU/2025-CAT.pdf,13,102041,6b0dcfeb10c46f95cc7c7b8e59d7e3f492633f3411cc64a8bad119813f3d4750,分类索引/相关性筛选
+articles/FHE-GPU/2025-FIDESlib.pdf,11,91845,645de1f914d0f74a2fa8fde24511522e4de5388a2939fa04f1a55d75ccf01147,分类索引/相关性筛选
+articles/FHE-GPU/2025-MultiGPU-LargeModel.pdf,13,106386,2979e81a8ab4b738ed4608f7e7f1d53408d23e6002d1f304d8acc36c9d98851b,分类索引/相关性筛选
+articles/FHE-GPU/2026-GPU-Sparse-DNN.pdf,8,59552,2f1d576602a65a42d1387884ccdb91f1839d2206ee622c11c422245962b3e5ae,分类索引/相关性筛选
+articles/FHE-GPU/2026-Janus-FHE.pdf,21,84469,b1e85ca68d7b090fbe8ed5c755b80ef38f7034100c3b239e056a594e77a4cb43,分类索引/相关性筛选
+articles/FHE-GPU/2026-LibFHE.pdf,16,135381,b4a6d7893ba08422f3ec0057694a9701c1495804f667b3916a3e32d71f883fa2,分类索引/相关性筛选
+articles/FHE-Hardware/2021-A Fast and Programmable Accelerator.pdf,15,145832,b637400c0a5ee59a593a588cf151521708152613e299b9f4a625848a5a5f2f4b,分类索引/相关性筛选
+articles/FHE-Hardware/2022-ARK.pdf,18,188476,c1f2e01a23091f730873c4c38fc1164ca00a33006a7c39eafde2987b393773a4,分类索引/相关性筛选
+articles/FHE-Hardware/2022-BTS.pdf,15,171755,fa15c7c34fd9fd92abc7044c3004eee9176011473d1fbeefa5a2652a3b123789,分类索引/相关性筛选
+articles/FHE-Hardware/2022-craterlake.pdf,15,141254,438498246592f72e4356aa97af62f11bc216c8db87bbb4830d766a585497a386,分类索引/相关性筛选
+articles/FHE-Hardware/2023-BASALISC-Programmable Hardware Accelerator.pdf,26,146085,35129b622cd71671ed3b292fda032a313488ab7746e5eb943f20a670332758e7,分类索引/相关性筛选
+articles/FHE-Hardware/2023-FAB-fhe_accelerator_fpga_hpca2023.pdf,14,99211,e2ac7f86978ce176c2d54f5208fd5628795985cae7ac536ef314882d3f512fc4,分类索引/相关性筛选
+articles/FHE-Hardware/2023-Poseidon-HPCA2023.pdf,12,139551,890e75f1d14ba68e3a5a0df9ee9e158f9140d97f601b336b8bb887758db6168a,分类索引/相关性筛选
+articles/FHE-Hardware/2023-SHARP- A Short-Word Hierarchical.pdf,15,193780,27ce893e855ec7f307d43f5017994ab5afa2636cd05400a83e1c4ccda142d308,分类索引/相关性筛选
+articles/FHE-Hardware/2024-APACHE.pdf,7,90838,48cb12c73b7d2d4f4528cb3ac86d28bd98217b8c911ee7b9969a6e558571cc75,分类索引/相关性筛选
+articles/FHE-Hardware/2024-Osiris.pdf,13,122578,b21c09a423ab70f83db262025b0f02f0665634c2de2d4b68b3a908e9b3f0f3e7,分类索引/相关性筛选
+articles/FHE-Hardware/2024-Taiyi.pdf,14,132700,b958adc07dba73728c203292cfda73665a48906784c7b02a86f47bbfea45b293,分类索引/相关性筛选
+articles/FHE-Hardware/2025-ABC-FHE.pdf,7,75729,a50d1e35cdaa83f07585d5670018448f589b1a95d66a31393086efb6af3b453f,分类索引/相关性筛选
+articles/FHE-Hardware/2025-DNA-HHE.pdf,9,111992,23e8b65229b61258efc3a673c7676a4019cbd2d567de1e8211869e24a24ffa63,分类索引/相关性筛选
+articles/FHE-Hardware/2025-EFFACT.pdf,15,154299,bd595c4232215f736c326e610950bde8c0c305180597e65ceb253f46f6c41528,分类索引/相关性筛选
+articles/FHE-Hardware/2025-FAME-FPGA.pdf,10,94637,b49f99660dc96eeee715ef28662c9928de54b403f59c8f215c7979cc43c1f137,分类索引/相关性筛选
+articles/FHE-Hardware/2025-FLASH-FHE.pdf,17,155554,c24304ce6c89dc10d279fb08efa0c4b700f2998b2326e97b5eb3f52deed368b3,分类索引/相关性筛选
+articles/FHE-Hardware/2025-FPGA-MatVec-OMR.pdf,5,38209,bb1046b169a154ee2473bcd498a251380c8ac39f8ab5658bef95dda65caaea23,分类索引/相关性筛选
+articles/FHE-Hardware/2025-FlexMem.pdf,9,100494,b0fae7274c6484de721b80b06b2fd11fb37d9d8b0bfa069d9443a855fd1acee2,分类索引/相关性筛选
+articles/FHE-Hardware/2026-ASIC-AI-Chips.pdf,18,200527,bb75645e5ca41cdb4f8bfd06dddf0aefffd17c0c7ea975d0d151f93d329804d7,分类索引/相关性筛选
+articles/FHE-Hardware/2026-FHECore.pdf,14,129499,c34f292a26657d7069bfa25755e0eb9992a258465739912e3ad22e320cb50d84,分类索引/相关性筛选
+articles/FHE-Hardware/2026-FPGA-AdaptiveKS.pdf,10,79340,0cfe9c36d70de04a76dff1e01d5891b4e0f00a8b907fbafd1e53db12385c3d4d,分类索引/相关性筛选
+articles/FHE-Hardware/2026-WHET.pdf,15,158994,3161070d5c63d7f2e198ae24a5384c89c1a620e9075bf5f12881329bf40221c6,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2020-Maliciously Secure Matrix Multiplication.pdf,40,115537,4afddfa8e992805843f156a2b5db3ab74ee09f22cc65673b2cca298774d1fe76,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2021-Fast Secure Matrix Multiplications.pdf,21,64427,4ae4984fa63248b66de90d172c92e38bde4dc1407add07c82a6ecb1635c75fcc,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2021-GALA- Greedy ComputAtion for Linear Algebra .pdf,16,176477,cd2fd703f2fa89d3c6fca4061bd20d689ea27cb7491e70cc0987280507bcce65,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2022-On Matrix Multiplication with Homomorphic Encryption.pdf,9,89818,7a166d90675dc5962fcf56d0362c46a93d624a408809b0893da115008caf1904,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2023-A New Framework for Fast Homomorphic.pdf,29,95130,cde42bc2b7b0abebaef762456032da81d73bde8574171e778bd1244dc1f9c707,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2023-Secure Outsourced Matrix Multiplication.pdf,21,59315,7a45f8199ffcaf2a2107aad8a5ec04245285ee25f0600ee76ee68793f2339ae5,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2024-BicyclicEncoding.pdf,22,159231,fd9568b8e44905c48ae7cfaee163e17086224ce696f7ebefb046781234f5fce8,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2024-GeneralMM-Cloud.pdf,16,144195,303e06be6f064cb45022396b6036b710c47bbde86a048549135f85cf884e8129,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2024-Outsourced-MM.pdf,25,70865,69847d0bdffe3bd148b1f9bd76278057aa24cfa02f1aab8e8c2e9ac80820a412,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2024-PC-MM-Bootstrapping.pdf,40,113266,61bb2d8630b9e595cf91385c7238395ea0c4e4baeeb7db53d37f848bbed51e92,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2024-ThreeInput-MM.pdf,5,54538,8790517b8fe2678661c5ef61b56461b5b67af02c1148f14f422d9a0b3d2f4680,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-BLAS-LinearAlgebra.pdf,46,186513,78d4a688c36a8a430aec6c2a70c40d3575da5f71799576b23e4003205d6bc020,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-FHE-MatrixArithmetic.pdf,27,100089,985173da6bc45f1c89c86769d5b6b16bfcdd98bf07e91476cd424778b8d9ec84,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-MM-3DRotations.pdf,31,78797,6fab9f763a9d3fdcc05ed525323b57da50030dba9fbf1f36c25842380d2df135,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-MatrixInversion.pdf,23,94278,2c87baf7a80026c63b6d6ab687ee96db5d9ee924aff4d4374f1f579c18368a0c,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-PC-MM-AHE.pdf,33,113218,347e7ffd1aefeb1c75c7561fda545becf33845b32d43aeed0a926c33570d2c81,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2025-VolleyRevolver.pdf,13,102894,26276fcaacdab22d9ab8eb7ffe6f39f10392e742bd950e93b8d8b0f693ccd9e9,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2026-CipherSkip.pdf,12,134759,75b7b98afaf802535e255397922c91a6b4b3e45418e46e1b50b21d33f315f92a,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2026-CompressedFHE.pdf,18,55045,76cd69f0e634a32ef7cbf04f6d54e6d5ef8d0bdbc8a3555a0e36967fbf2c1124,分类索引/相关性筛选
+articles/FHE-Matrix Multiplication/2026-SubCubic-MM.pdf,34,107777,545900dbb9d76543189967e09c90b77798e1aebc067b2b24782224b1acb8f8ab,分类索引/相关性筛选
+articles/FHE-PPML/2020-AutoPrivacy-Automated Layer-wise Parameter.pdf,10,51042,5cc7fee9d949115576c2d87221e0cb49f2d42e3eb40305b3304afe3e2b6dd305,分类索引/相关性筛选
+articles/FHE-PPML/2020-CrypTFlow2-Practical 2-Party Secure Inference.pdf,18,177331,33a5042e1e114b4c9faac77a1f4a398ff382a6b2574777587d3c1bf1ca599680,分类索引/相关性筛选
+articles/FHE-PPML/2020-DELPHI- A Cryptographic Inference Service for Neural Networks.pdf,18,132220,e7dc12b44a47d78d7c256095ead446b7be2d00942e6913d1089f883304b87881,分类索引/相关性筛选
+articles/FHE-PPML/2022-Cheetah-Lean and Fast Secure Two-Party.pdf,19,136170,8cdbcf2b4bf198f347afec4bd21fd8aed64355e682409846247ac7b574f88c9d,分类索引/相关性筛选
+articles/FHE-PPML/2022-SIMC-ML Inference Secure Against Malicious Clients at Semi-Honest Cost.pdf,18,128334,49f8aa576b8515ffb79cee816c0070aa36a90ddf4662092fdfbbfaa233b2cd70,分类索引/相关性筛选
+articles/FHE-PPML/2022-Secure human action recognition by.pdf,13,153333,3d446c6c19a80a72a0f2d9a675481a8b9e9dff57953a58feea3aed5cc76d1969,分类索引/相关性筛选
+articles/FHE-PPML/2023-HeLayers-A Tile Tensors Framework for Large Neural Networks .pdf,18,156228,1bba57f37bc04302ed38bb94fbb73c7e55f9af71b6fbd6f3f8b5238a3f50b89f,分类索引/相关性筛选
+articles/FHE-PPML/2024-BoostCom.pdf,12,112852,c3ecdb446e8a1bcbb295148e33482b7e2c5e09d2d6f71812ed89f90679ab9f1f,分类索引/相关性筛选
+articles/FHE-PPML/2024-DiseaseClassifier.pdf,6,40192,6e38d6762d32ff9efdb640d5c99cbc8c64c167b0582f57b2f221055df3892e6d,分类索引/相关性筛选
+articles/FHE-PPML/2024-HETAL.pdf,28,141623,47907ab3dbedf62c6bab140d9471ca4500b34d37463c624a1a27f91665005d96,分类索引/相关性筛选
+articles/FHE-PPML/2024-HElix.pdf,17,50168,b0db4f4907b5d3f2a570028e8bdc048d1d4533f0302c3238ddd6593d561fef7a,分类索引/相关性筛选
+articles/FHE-PPML/2024-LinearTransform-SmallKey.pdf,24,182736,04c16abe4fcf4b1c4ae756132534ae3666a888c1c13109530984183aeccdf6cf,分类索引/相关性筛选
+articles/FHE-PPML/2024-Monchi-Walk.pdf,8,23151,e436665cfbd14e2690379fb8698e411775144990d6a4d62c6344281d05219873,分类索引/相关性筛选
+articles/FHE-PPML/2024-Monchi.pdf,12,104009,61b2c1dfb8ceb7587835c11d99f63a5329d67801380d47c857a28fee7e869e1d,分类索引/相关性筛选
+articles/FHE-PPML/2024-PoPETs-Hawk.pdf,17,177884,87b74a21338d957afa95336e173a4b7ef809f85c95a1773491cad0c81422cd70,分类索引/相关性筛选
+articles/FHE-PPML/2024-PoPETs-LightweightTEE.pdf,22,200563,c97ca19dafb821e2f2f61aab9e036c9902646a9e662665dd09265b42b017ebce,分类索引/相关性筛选
+articles/FHE-PPML/2024-PoPETs-PSMT-TFHE.pdf,17,156269,04e17a3ab21dc3381a5c9fff9a33209bde5ad9d65e397b67270f3beb0c717d74,分类索引/相关性筛选
+articles/FHE-PPML/2024-PoPETs-PrivDNN.pdf,18,147250,9b20e796e513a55d98a9bc64f23cd9afb364f8e3c098d15ba52dd98bb647ffe9,分类索引/相关性筛选
+articles/FHE-PPML/2024-PoPETs-SoK-Reproducible-PPNNT.pdf,21,212549,6adbcba0c263f8463c43b88125d3ae21cf276240102d428ad19286e6116f4514,分类索引/相关性筛选
+articles/FHE-PPML/2024-Powerformer.pdf,22,133121,75352e4aba43f2eea6a9f7cc124a35452087e8cc85fe95017c3ab20bc8ebb425,分类索引/相关性筛选
+articles/FHE-PPML/2024-THOR.pdf,15,131333,ddb57004b56ee8e00beffc4f563fd0921242753fda6c704065d4900b792439cd,分类索引/相关性筛选
+articles/FHE-PPML/2025-APINT.pdf,9,127622,4ce3bdf11b73ca6bd71228ce806fc82d60e3ed44cc1271369ba464f6743fbd65,分类索引/相关性筛选
+articles/FHE-PPML/2025-ARION.pdf,18,152939,337351faeef6395d8e5d629ad38304dc73ca79b0332fdb278c791d94e76aa37a,分类索引/相关性筛选
+articles/FHE-PPML/2025-BruteForce-Biometric.pdf,25,212160,e506d2ea49aca55daa7e65177a8b32f1fca3f81f0ba30747aa1794f365be7a1c,分类索引/相关性筛选
+articles/FHE-PPML/2025-CKKS-Eval-Security.pdf,49,178027,29494a3144f20cc732e18fad12997d8fa0e49c58ec5c5fe4d9e8ad71b24c9331,分类索引/相关性筛选
+articles/FHE-PPML/2025-CryptoFace.pdf,10,82865,e8136080f00497ff2e1794821ec1cd99e83a6d924c66fe4ee43ce75ac469802f,分类索引/相关性筛选
+articles/FHE-PPML/2025-DataValuation.pdf,34,173163,e4aaa2697730db261ff94bf765cb873a738ef4998565ad3d0bc523f9d783a00c,分类索引/相关性筛选
+articles/FHE-PPML/2025-ENSI.pdf,12,86309,f8235767a6cb61b1bd589aa261aef65ae1b45a81a4fc9fff3f334ad568b63d0a,分类索引/相关性筛选
+articles/FHE-PPML/2025-EncVectorSimilarity.pdf,12,46713,3c0e0f71277630fbb371b3269a782a0682fe666daa867b28066352839f1e28c5,分类索引/相关性筛选
+articles/FHE-PPML/2025-FHE-vs-GC.pdf,8,72788,fe77e4d604b448ac56f977da4a02ca4046bfac846ddf9a50077955361433e233,分类索引/相关性筛选
+articles/FHE-PPML/2025-FicGCN.pdf,18,115466,21db40c7a83209a8a32cdcc7d72a815fd96b8b2ca0ca49399182bc76b4ce8a47,分类索引/相关性筛选
+articles/FHE-PPML/2025-FineTuned-LLM-FHE.pdf,19,78686,2232b22122276deb299ee17e2c4dbcca4988a04f1ad1573fd70070b08b97eb0d,分类索引/相关性筛选
+articles/FHE-PPML/2025-HE-LRM.pdf,17,127097,9ecea15cc50bd1b34d60400ae991a1337eb2ec0c8d03742c162adce89c3476a7,分类索引/相关性筛选
+articles/FHE-PPML/2025-HHEML.pdf,9,61688,23b775213e56c39b43f29ddcf4d02ca3b925ef03eccdedf676d4430b11b397dd,分类索引/相关性筛选
+articles/FHE-PPML/2025-HybridCKKS-MPC.pdf,20,189002,48536e44602461b4f0ea288faf3d1328e593aa08c9537ae63520d5be4af4484e,分类索引/相关性筛选
+articles/FHE-PPML/2025-Hyperion.pdf,10,52087,609adf8c3a309f96d59dcb0311d037910a63777c4610c0377811cc3cceab149b,分类索引/相关性筛选
+articles/FHE-PPML/2025-NetAdapt.pdf,17,174607,b402ef46da1c44cb28fb73b773e96902738b7cb0b6a17f68d6a7551beb47a42c,分类索引/相关性筛选
+articles/FHE-PPML/2025-PPMI.pdf,29,114943,c533ba033d80d57cd89168012cfb4afb7e2617b643e46adaf5e6fa99c73ba3db,分类索引/相关性筛选
+articles/FHE-PPML/2025-PoPETs-HyDia.pdf,20,193865,a58fa21a8a7a4b5f7d2752025204664340bfd19fba3709a185e832cb679f8ce5,分类索引/相关性筛选
+articles/FHE-PPML/2025-PoPETs-PrivateAssurance.pdf,22,187735,172d6c9ee97a274eff989d2049083f30733d76e660b3670545667001d12ab1e7,分类索引/相关性筛选
+articles/FHE-PPML/2025-PoPETs-SoK-Truncation.pdf,23,196750,861cd2953420b48cee8029d3afd51add08ef8ce96cac7dd15f8d3e8e9e373f44,分类索引/相关性筛选
+articles/FHE-PPML/2025-PoPETs-TETRIS.pdf,16,139291,2c79fcd371acf64fe7774d05e7325a5242045321743f51b4a0af1a133b54b1b1,分类索引/相关性筛选
+articles/FHE-PPML/2025-PoPETs-VerifiableFHE.pdf,22,202135,3e0751e189d6f6e8baf14c90341f1d609ff368d4926c0bcba9a3de958d06a79c,分类索引/相关性筛选
+articles/FHE-PPML/2025-Prismo.pdf,18,137552,790e14a76109b54d9e1a6160dee07cbf096881a564ac234b54d0384290734273,分类索引/相关性筛选
+articles/FHE-PPML/2025-PrivGNN.pdf,17,75657,75b8d86d869943c1602be71672203f1d526977e562add9e490ae0a60c063cb19,分类索引/相关性筛选
+articles/FHE-PPML/2025-QASP-Audio.pdf,34,75646,a231c168544ea1ed26020529d8755482f7df7f18fb85a06f979605234d52c3a2,分类索引/相关性筛选
+articles/FHE-PPML/2025-SoK-FHE-GeneralAI.pdf,17,166907,f17cfce9dc23f9f39b6c316fc6c7cd0f5960e4ab4924e93e57e188727bbe3195,分类索引/相关性筛选
+articles/FHE-PPML/2025-Sparsity-FHE-DNN.pdf,8,49613,fbfa748758082502ff0b1ddce6c446667dc72f343b1c91843dee27c49e785eea,分类索引/相关性筛选
+articles/FHE-PPML/2026-AEGIS.pdf,14,145350,5d32170920bcde3e7f108ce8b2c3673ff5ac99125391a9ba3e2e7787d9921f68,分类索引/相关性筛选
+articles/FHE-PPML/2026-ATLAS.pdf,112,289351,ce208c18c5f1f1f96d0e69595a545cbe39fb93fb121fa1926fb859934a08bd9b,分类索引/相关性筛选
+articles/FHE-PPML/2026-BeyondLatency-MPC-FHE.pdf,12,97423,5519d140e1e2ce45f768cc1de4684a84fed71a39a56ce8869b4a838b883d776f,分类索引/相关性筛选
+articles/FHE-PPML/2026-Bifrost.pdf,16,114583,b4338a47e492923b054687b1571a355b49e41b05780899164f6a16c7fb6be2a7,分类索引/相关性筛选
+articles/FHE-PPML/2026-BillionNNS-GPU.pdf,21,85941,2503d92950d8b3ba6be46c7b696928fb0c8ab59030c46429fa3e2c5ae3308e88,分类索引/相关性筛选
+articles/FHE-PPML/2026-BioZKFHE.pdf,28,265548,a021997c11a6b28294120747cdc50fab2d93ede3d55fd184868523bb43c2c287,分类索引/相关性筛选
+articles/FHE-PPML/2026-CGF-Softmax.pdf,19,85129,da08c8d06c684d1ef5a5e5e4c3b3f106f5dcb61b716626c008f5ef0b64cfceb9,分类索引/相关性筛选
+articles/FHE-PPML/2026-CHEHAB-RL.pdf,27,187838,407b9f99b373e340ef2a51fc8e1b2c2e250f5a05fe9d73ce53cea070f49530c9,分类索引/相关性筛选
+articles/FHE-PPML/2026-Cachemir.pdf,16,179974,67db77545b62a4ec0f6906706b947492e6d1bcd9a37b84e5afc32445b41c98e7,分类索引/相关性筛选
+articles/FHE-PPML/2026-CoDesign-FHE-AI.pdf,4,14583,9b4bac9b86a65816f8bc9ec40cf859333c759a42bcd2378d7dac3e3fe58aaf01,分类索引/相关性筛选
+articles/FHE-PPML/2026-CryptoGen.pdf,15,135095,c98168cfdefff43d7dbb5aa9d6a3b04d94a0ec688635a505ecf5532c20a4f94a,分类索引/相关性筛选
+articles/FHE-PPML/2026-ELLMo.pdf,17,125077,40ca842a63587f0150a0ddf06d93aacb5a8c0a5fbc12a47cc334e9c3b230141b,分类索引/相关性筛选
+articles/FHE-PPML/2026-EncFormer.pdf,22,184521,96621b250fb31864c57ee6aa75aacf8fca46d3fc8ceadb1c911f95c62bccd615,分类索引/相关性筛选
+articles/FHE-PPML/2026-GNN-Financial.pdf,8,83549,9a2207d110b0168143b834224f0f08921832fd971e19dfd0bda7ca584431540d,分类索引/相关性筛选
+articles/FHE-PPML/2026-GPU-TFHE-Nonlinear.pdf,11,96838,4bd21bfbdb21ad1da5e7ae0f90082afbeb5408bae2658c7ed409045361406c64,分类索引/相关性筛选
+articles/FHE-PPML/2026-HE-DAP.pdf,10,79801,9abac4dd22c18649ceeb043ef0e875436544dac96d9b5befa978154ee9b3177e,分类索引/相关性筛选
+articles/FHE-PPML/2026-HE-Guardrail.pdf,12,80968,6844f8627a791a6302d0297e34431314dd61c8af83dd87433d2c2f60c18e0009,分类索引/相关性筛选
+articles/FHE-PPML/2026-KernelReLU.pdf,10,76124,cc578be9827907c97b047311804aaf6ac0b9bbacf5faa10d6e9af10f63c226a2,分类索引/相关性筛选
+articles/FHE-PPML/2026-LSTM-PBS.pdf,12,82075,864287276123ea2c4424d1a73f753a8b7f047ed6711ef52f7c33568ca7b3a6f0,分类索引/相关性筛选
+articles/FHE-PPML/2026-Llama3-8B-FHE.pdf,13,101246,ba9e81512f3ec828b514596b826b81743e2bf9c026a55b8d04afcff55b23ea05,分类索引/相关性筛选
+articles/FHE-PPML/2026-PoPETs-ChangePoint.pdf,16,137413,d6725200b605c03606f09cada04cb19a10fc76e9fa44a30d971d87328bb84ec7,分类索引/相关性筛选
+articles/FHE-PPML/2026-PoPETs-POPPY.pdf,22,181566,94a425da16b62a8f4b87a153eed938931b45700be15703a85ec76ddf71aece2a,分类索引/相关性筛选
+articles/FHE-PPML/2026-PoPETs-SPRINT.pdf,20,195523,f534730efb1abe8c21169a074a270360675a9d04f2d3428b8bb0c457756e81fd,分类索引/相关性筛选
+articles/FHE-PPML/2026-PrivateIris.pdf,18,150116,96a8533728ec368f7889bcc44c2ee2fe02f5bcfc7acb0bb148e7871b64b30276,分类索引/相关性筛选
+articles/FHE-PPML/2026-ScaleDesign-LLM.pdf,19,71026,cd2e72cc4dcfbe2a6cf509cca627d5596d068be0f77cb155313aacc17ecbab95,分类索引/相关性筛选
+articles/FHE-PPML/2026-ScalingFHE-Llama3.pdf,17,118559,11fa21050f82f75b8909d6198ab1641baeae11644acde8db280f2d0ff4bd6add,分类索引/相关性筛选
+articles/FHE-PPML/2026-SoK-Private-LLM-AHE.pdf,22,173815,9daf3c572b5f6f78d6e74191746b705065d8a47eec359578e1f10f2fb21c5a4f,分类索引/相关性筛选
+articles/FHE-PPML/2026-SoK-PrivateDNN-AHE.pdf,42,217842,116378348b857b7a607ec99451533902dafb6f75e8619fbdac9f32f3f177281d,分类索引/相关性筛选
+articles/FHE-PPML/2026-WordWise-FHE.pdf,8,70000,8792a9bbdaeba42295f0e6bef76020ae8ef210d5f40469598485c3e1cd11d5cf,分类索引/相关性筛选
+articles/FHE-PPML/2026-Zephyr.pdf,18,60762,d6c7bc04e127952ddc44ff691283ab98cbda92ef445d365b36bf0ae28f76bb30,分类索引/相关性筛选
+articles/FHE-PPML/2026-mmFHE.pdf,17,118189,ad3526f60fd9a9497bfd232971fe255ab55f8a05387d9f4d89588dd05725a655,分类索引/相关性筛选
+articles/FHE-PPML/2026-zkML-Separation.pdf,39,156252,c1fffc6383c82c5914b24de63d3ac8f91eae268edf60d1eaa348cddcf8ef4f00,分类索引/相关性筛选
+articles/FHE-Retrieval/2021-Cloud-based Private Querying of Databases by Means of Homomorphic.pdf,9,54009,607dff41c8855eaaf6cca7e2241732e93830618df54434f018b5d45f7cdef01a,分类索引/相关性筛选
+articles/FHE-Retrieval/2021-Compressed Oblivious Encoding for Homomorphically.pdf,15,121528,a6361b39037562e1b77a9594ae4ff01b0bc56fec0f425e2640e6ed6be13a9651,分类索引/相关性筛选
+articles/FHE-Retrieval/2021-OnionPIR- Response Efficient Single-Server PIR.pdf,14,117982,82a7193c5ac26922e5a03511224045d1accca59086a14fbf12f86127de74b3e8,分类索引/相关性筛选
+articles/FHE-Retrieval/2022-HERS- Homomorphically Encrypted.pdf,16,114430,5d6e64612c86c34acd36bb810df4c92cf5b34b1fa772e7376c74e1b876d6a03f,分类索引/相关性筛选
+"articles/FHE-Retrieval/2022-Spiral- Fast, High-Rate Single-Server PIR via FHE Composition.pdf",46,211852,6d8e222256418740948d9a9d2a66a0a5f32f8fb513ac5a69aa655a7f689798b4,分类索引/相关性筛选
+articles/FHE-Retrieval/2023-CSHER- A System for Compact Storage.pdf,19,117290,9c450bcffd31a0192d966ea78713e9b0254c504696ab145dadf4ce75fc9c1b6e,分类索引/相关性筛选
+articles/FHE-Retrieval/2024-ArcEDB.pdf,27,201185,36a452ed15e41eec8b0f563c6b9e3eb09d6eae74444d16cd4b7e8196b0561b43,分类索引/相关性筛选
+articles/FHE-Retrieval/2024-Encrypted-EquiJoin.pdf,19,156467,dfb982b3f9db4be6dd6c27e6c289778654e1b4259d4360330bc17ea9c4efe914,分类索引/相关性筛选
+articles/FHE-Retrieval/2024-FastQuery.pdf,12,67378,5a242b1a65ceaaaa256a3f02fd0d3cc6eb40c249ca39c0e645502176520711be,分类索引/相关性筛选
+articles/FHE-Retrieval/2024-Leakage-RelationalSearch.pdf,14,87463,4ea813411ff8b14ef6fe121bba8381607ae5e96916ac231118a0f2d41c284f21,分类索引/相关性筛选
+articles/FHE-Retrieval/2025-Engorgio.pdf,23,187920,8f1d84be2d8ac05140ad27785e0720203ef5c8932b187e035ff2af581c28a447,分类索引/相关性筛选
+articles/FHE-Retrieval/2025-FHE-RangeSearch.pdf,26,98776,c41e5ba307244d67bf4a89d3e3c3ef4a30e5bd9ae2a8b7c44e568bd8716648e1,分类索引/相关性筛选
+articles/FHE-Retrieval/2025-PIR-HE-Revisited.pdf,21,85940,f5ece25e405b8a7f69c1f0df937371770e7aee0fc3e1c309f0992f272ecdd87c,分类索引/相关性筛选
+articles/FHE-Retrieval/2026-CAROUSEL.pdf,13,124530,e2314b4a1cc47d7c17caf9839f5beee727354fab2a069518bc4accbf63dea1e1,分类索引/相关性筛选
+articles/FHE-Retrieval/2026-GoldenRetriever.pdf,10,52594,b22d2a47b62ea40eec7bf58f5de19c91509d5141ba024a6fcc2d54e04957023d,分类索引/相关性筛选
+articles/FHE-Retrieval/2026-PIR-Tutorial.pdf,25,188420,98382726b84bc4c4e52218dc1f6f0b6dffcfc321d79aabd54ac4245754ae3309,分类索引/相关性筛选
+articles/FHE-Retrieval/2026-PQ-ANN.pdf,15,67560,183543ccbf4795a8d20236896587897f357874f85e8aafcf407510f6ad7ee101,分类索引/相关性筛选
+articles/FHE-Scheme/2020-Better Bootstrapping for Approximate.pdf,26,84638,e26dced60e1789bba9a461e82f768dcdb8e6f532326c2af00d05394516743bd7,分类索引/相关性筛选
+articles/FHE-Scheme/2021-Non-Sparse Keys.pdf,46,132908,3b53cf70c8cde60571edc749ce9ff5d7e5c09201cf316cbd178055fe8a2aeabe,分类索引/相关性筛选
+articles/FHE-Scheme/2021-On the Security of Homomorphic Encryption on Approximate.pdf,27,114479,1e695e93051ef981bc9ab4e32927c2aa0805492608a6053685cfd386fb97e423,分类索引/相关性筛选
+articles/FHE-Scheme/2022- Reduced-Approximation-Error.pdf,34,113566,548be161a5feea3c4490ceb84e4c602cc67f8571e8d2d1ccc4a836c1bfd8cb93,分类索引/相关性筛选
+articles/FHE-Scheme/2022-EvalRound Algorithm in CKKS Bootstrapping.pdf,28,84766,69eccc850b7bb98018ddb29aa1521e2affe78de7d80abd67df85322abd8d3299,分类索引/相关性筛选
+articles/FHE-Scheme/2022-FINAL-Faster FHE instantiated with NTRU and LWE.pdf,24,83440,dbf2e69f225c5a62bf175bdf273c161c9dd72717712d357d151cbacf8d5e56f3,分类索引/相关性筛选
+articles/FHE-Scheme/2023-Efficient FHEW Bootstrapping with Small Evaluation Keys.pdf,28,100081,218f6c719ae34b44be234c0df5cd15bdcb108f48a263aed70c815325875f9b2c,分类索引/相关性筛选
+articles/FHE-Scheme/2024-Chameleon.pdf,15,145477,5abd8ea15e5888f7585569d05f3991979a0383d81db607ce6f67feeeea317fc1,分类索引/相关性筛选
+articles/FHE-Scheme/2024-NTTSuite.pdf,8,60967,bc7c6582b8371a5d7f2bdbc208aaecd08f6a7aa2653a8ce56954b714002f08b5,分类索引/相关性筛选
+articles/FHE-Scheme/2024-cuTraNTT.pdf,13,94293,d56b7e88ad32aa5196bc12f6afda895a8cdd97e92883be8bd620124c976a50f4,分类索引/相关性筛选
+articles/FHE-Scheme/2025-GPU-KeySwitching.pdf,18,93557,9223e5689b8326928f06fe8d83ed1dc74dba21f9658c9cee77f7cbbfbc19b7a9,分类索引/相关性筛选
+articles/FHE-Scheme/2025-MatrixRings-BGV-BFV-CKKS.pdf,20,62548,1726b619bef078f102afce4f68f679e2f3a6fee5329092fa178bbf14996fae23,分类索引/相关性筛选
+articles/FHE-Scheme/2025-RampUpNTT.pdf,14,77104,5a673ae5dbc41428f039436934175e960d3fdc5692698dcaecee8c474785b86a,分类索引/相关性筛选
+articles/FHE-Scheme/2026-AsynchShamir-ThFHE.pdf,67,225944,6e0dfd7a80048e358fab95f234737ab3fc7cf227baf92a539b844f123d4372d4,分类索引/相关性筛选
+articles/FHE-Scheme/2026-BOLT-FHE.pdf,26,102939,913f19ef2277b5e372db35c9ba448d75ded87b682ede3321ae007a272a498619,分类索引/相关性筛选
+articles/FHE-Scheme/2026-Bootstrap-MatrixArith.pdf,43,132355,64e51625fd52589d01e7a11e027a9caf17fac2b8f080e898e5ed25bf793d97b4,分类索引/相关性筛选
+articles/FHE-Scheme/2026-ButterflyEffect-MKFHE.pdf,35,103142,7a28959e4f2b9ad70190f8b72d2db8aa1d54f08b6c13ff1a1221616d662401cc,分类索引/相关性筛选
+articles/FHE-Scheme/2026-HomSig-SoK.pdf,50,187265,73a14d4742d9d942e4d780c8af76555f0aa9d8f94a1898c3753c9156c1fbb426,分类索引/相关性筛选
+articles/FHE-Scheme/2026-Jambon-ThFHE.pdf,85,252105,640e6c8a57318f2a7154199b1df0d9cf20f6d3ed01bde924e42e13b206b6f5ce,分类索引/相关性筛选
+articles/FHE-Scheme/2026-Levis-MKFHE.pdf,26,80036,0c7a592b351f9716e5a4b8837a89517a54bad6713319c9c930d51df4c9508d91,分类索引/相关性筛选
+articles/FHE-Scheme/2026-LowDepth-MatrixNative.pdf,26,112972,3820051364fe783b364df3e61df989b61dca2c774dfda70e714409de07080cda,分类索引/相关性筛选
+articles/FHE-Scheme/2026-MKFHE-Compact.pdf,47,138641,aabfb8e375edf3a2f9f82a1a5c91e3c9b19c80b11b33c65ba9d92fbdd35559b3,分类索引/相关性筛选
+articles/FHE-Scheme/2026-MKFHE-Fast.pdf,47,169170,3ae3ac51c72c6fbc4e0ed458b0eef34079d4b40ffdb524752b623263980feb33,分类索引/相关性筛选
+articles/FHE-Scheme/2026-ModulusConv-ThFHE.pdf,35,97038,6e88b5009ab6fd0d9cfd8e587cdd359dee0c152879f6c894b2cfc13b1c72e89e,分类索引/相关性筛选
+articles/FHE-Scheme/2026-RLWE-NIZK.pdf,62,231691,d49e1d3ec135365f856ad354cf97b7b0bc0c2785c18deca112131fbb80bd1cbb,分类索引/相关性筛选
+articles/FHE-Scheme/2026-ThFHE-SyncDecryptor.pdf,33,105832,47d456a40c10e9362546ccbfb60726d1865c5dfe9e771763a66d851ac00c872a,分类索引/相关性筛选
+articles/FHE-Scheme/2026-TripleHoisted-BSGS.pdf,13,116765,9c17c4a7e73394beeca9bdd6cbabea5f67967ceaab3436ca19aa438a2cadc61d,分类索引/相关性筛选
+articles/FHE-Training/2020-A Low-Depth Homomorphic Circuit for Logistic Regression Model.pdf,33,102550,c20536b45a74b4c772c04f7384a3d0ede3f7ce375480d32d2d9047cf5df64ba6,分类索引/相关性筛选
+articles/FHE-Training/2020-Improved privacy-preserving training using fixed-Hessian.pdf,13,114540,9ca4241b0c8da4439c1dd5ae4bb599421d379b5ecb3bb46edd02a89d8b8ea0d8,分类索引/相关性筛选
+articles/FHE-Training/2021-POSEIDON-Privacy-Preserving Federated Neural.pdf,18,175175,c31aae0de6d3e76a7547dc9d40a291b07345c25a8949002f286fabbe31c9b4e0,分类索引/相关性筛选
+articles/FHE-Training/2021-popets-Scalable Privacy-Preserving Distributed.pdf,25,496511,9215d56041ff9bb8716428206dc411123a358b2d413cfc32a078b40663004aed,分类索引/相关性筛选
+"articles/FHE-Training/2022-CryptoTL- Private, Efficient and Secure Transfer.pdf",21,62909,ec3068c948fd278ffcd8964522f3fc7d02d3dcc98d3f071359639cf34e69c54e,分类索引/相关性筛选
+articles/FHE-Training/2023-HETAL- Efficient Privacy-preserving Transfer Learning with Homomorphic.pdf,26,127438,19adcdb42454ba5e1bc2fbb77ee822fb3cf98373cdc8c8f0498d2fb0383a0a01,分类索引/相关性筛选
+articles/FHE-Training/2023-Hercules-Boosting the Performance of.pdf,24,181919,692d43c9fb2460687a69be9c75a8658589bdca09aca6b6c5437d3959aa985cc9,分类索引/相关性筛选
+articles/FHE-Training/2024-CryptoTrain.pdf,8,78535,741163e733a0103984dba0c657c9413b9dfb88a679a3778b2186e0246c561af6,分类索引/相关性筛选
+articles/FHE-Training/2024-Encrypted-Finetune-Transformer.pdf,8,44246,1ce7a89e262635dab871c64611563f7ceb13ba954af79cb366577f5981863696,分类索引/相关性筛选
+articles/FHE-Training/2024-MedBlindTuner.pdf,8,41756,5eba5ffb02d746f930cc9a4e893b6162838117876ad090d11ca4308bcf83abd6,分类索引/相关性筛选
+articles/FHE-Training/2024-OPA.pdf,64,296943,1ae06fc31394b7859bf1b56fcf63a3134482df14f2673bec6ab075fe92f7b7de,分类索引/相关性筛选
+articles/FHE-Training/2024-WiSARDs.pdf,14,121792,0d8f6a48bee7bf555b6a654ac50f7dbb53889b055c2b03f4179e87ffc060993b,分类索引/相关性筛选
+articles/FHE-Training/2025-PoPETs-OptEncryptedNN-FHEW.pdf,17,151265,1bc7d683fdbe808fed4e7bc7f5052b7039dc65141d15ba9946893bb21de2aed6,分类索引/相关性筛选
+articles/FHE-Training/2025-PrivateLoRA.pdf,17,67544,455e679beb79b3273cd6b1afd3819fe96fc2067e56d4cabcda3efe350229a58a,分类索引/相关性筛选
+articles/FHE-Training/2025-SHE-LoRA.pdf,33,145999,afdf422ba53bb3eba93493818fc3b25387e40f168a860277d39bab023b790539,分类索引/相关性筛选
+articles/FHE-Training/2026-FHE-Training-DP.pdf,33,159447,7f5703894bf44cc637302b177a3160bf4aff89f8533106fb068aecc1ab6b2e3b,分类索引/相关性筛选
+articles/FHE-Training/2026-FOVA.pdf,30,91339,f4564d7a012bb9b07a906c0f9051ab62ef6afffb077e3698058e469593c62860,分类索引/相关性筛选
+articles/FHE-Training/2026-HEFL-Backdoor.pdf,12,90781,2f782cab215eb24dfe8db95c0b11fa146cbeeb78382a2bf98d30b24c75c203c6,分类索引/相关性筛选
+articles/FHE-Training/2026-Hadal-LabelDP.pdf,29,109868,94313d89100302bc83b3893a06e5fa2d4d0daaa36aa3a59c028168e04399b9b6,分类索引/相关性筛选
+articles/FHE-Training/2026-PoPETs-Argmax-XGBoost.pdf,26,200022,094ad4da77c29664d9a15b33c3f60b70729daa0b68aa70b66dd7ddee9c4e69cc,分类索引/相关性筛选
+articles/FHE-Training/2026-SealAgg.pdf,20,72415,14397e91dda00661def5a78f67e0064ebfb929f8162a4ac4f85681c2f549a60b,分类索引/相关性筛选
